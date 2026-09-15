@@ -1,0 +1,33 @@
+name: Health Check & Auto-Resolve Domains
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'   # Her 12 saatte bir
+  workflow_dispatch:
+
+jobs:
+  check-providers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run Health Checker
+        run: python scripts/health_check.py
+
+      - name: Commit Updated Domains
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add domains.json
+          git diff --staged --quiet || (git commit -m "chore: auto-update domain addresses [skip ci]" && git push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

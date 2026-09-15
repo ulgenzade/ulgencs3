@@ -1,0 +1,16 @@
+.gradle/
+build/
+*.iml
+*.ipr
+*.iws
+.idea/
+local.properties
+*.class
+*.apk
+*.dex
+out/
+captures/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
