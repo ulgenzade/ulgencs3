@@ -35,8 +35,10 @@ class AniziumProvider : MainAPI() {
             ).text
             AppUtils.parseJson<Map<String, String>>(config)["anizium"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
-        } catch (_: Exception) { }
+        } catch (e: Exception) { }
     }
+
+    private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
     override val mainPage = mainPageOf(
         "content_type=anime&sort=last_episode" to "Son Bölümler",

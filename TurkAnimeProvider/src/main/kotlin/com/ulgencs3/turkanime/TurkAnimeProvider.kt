@@ -2,7 +2,7 @@ package com.ulgencs3.turkanime
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.network.CloudflareKiller
+
 import org.jsoup.nodes.Element
 
 /**
@@ -45,7 +45,7 @@ class TurkAnimeProvider : MainAPI() {
             dynamic["turkanime"]?.takeIf { it.isNotBlank() }?.let {
                 mainUrl = it
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             // Ağ hatası → fallback URL devrede
         }
     }

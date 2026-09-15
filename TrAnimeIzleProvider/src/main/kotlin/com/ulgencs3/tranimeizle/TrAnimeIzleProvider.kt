@@ -38,8 +38,10 @@ class TrAnimeIzleProvider : MainAPI() {
 
             // Bot kontrol cookie'sini al — CloudStream'in cookie jar'ına kaydeder
             app.get(mainUrl, headers = commonHeaders)
-        } catch (_: Exception) { }
+        } catch (e: Exception) { }
     }
+
+    private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
     override val mainPage = mainPageOf(
         "$mainUrl/anime-listesi?sayfa=" to "Tüm Animeler",

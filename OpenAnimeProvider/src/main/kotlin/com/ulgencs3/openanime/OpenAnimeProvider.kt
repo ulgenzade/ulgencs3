@@ -44,8 +44,10 @@ class OpenAnimeProvider : MainAPI() {
             if (nextData != null) {
                 nextBuildId = JSONObject(nextData).optString("buildId").takeIf { it.isNotBlank() }
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) { }
     }
+
+    private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
     /** Next.js API URL oluştur */
     private fun nextApiUrl(path: String): String {
@@ -85,7 +87,7 @@ class OpenAnimeProvider : MainAPI() {
                     })
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             // Fallback: HTML kazıma
             val doc = app.get("$mainUrl${request.data}?page=$page", headers = commonHeaders).document
             items.addAll(doc.select("div.anime-card, article").mapNotNull { it.toSearchResult() })
@@ -117,7 +119,7 @@ class OpenAnimeProvider : MainAPI() {
                 }
             }
             items
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             val doc = app.get("$mainUrl/search?q=${query.encodeUrl()}", headers = commonHeaders).document
             doc.select("div.anime-card, article").mapNotNull { it.toSearchResult() }
         }
@@ -167,7 +169,7 @@ class OpenAnimeProvider : MainAPI() {
                     })
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             // HTML fallback
             val doc = app.get(url, headers = commonHeaders).document
             val t = doc.selectFirst("h1, h2.anime-title")?.text()?.trim() ?: "Bilinmeyen"
@@ -222,7 +224,7 @@ class OpenAnimeProvider : MainAPI() {
                     }
                     return true
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) { }
         }
 
         // Fallback: iframe'ler

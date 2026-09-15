@@ -45,8 +45,10 @@ class AnimeCixProvider : MainAPI() {
             // XSRF token çek
             val resp = app.get(mainUrl, headers = commonHeaders)
             xsrfToken = resp.cookies["XSRF-TOKEN"]
-        } catch (_: Exception) { }
+        } catch (e: Exception) { }
     }
+
+    private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
     private fun authHeaders(): Map<String, String> {
         return if (xsrfToken != null) {

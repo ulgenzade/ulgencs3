@@ -35,8 +35,10 @@ class AnizmProvider : MainAPI() {
             ).text
             AppUtils.parseJson<Map<String, String>>(config)["anizm"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
-        } catch (_: Exception) { }
+        } catch (e: Exception) { }
     }
+
+    private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
     override val mainPage = mainPageOf(
         "$mainUrl/anime-listesi/?filtre=yeni-eklenenler&sayfa=" to "Yeni Eklenenler",
