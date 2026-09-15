@@ -1,4 +1,4 @@
-apply(plugin = "com.android.library")
+﻿apply(plugin = "com.android.library")
 apply(plugin = "kotlin-android")
 apply(plugin = "com.lagradost.cloudstream3.gradle")
 
@@ -8,6 +8,7 @@ cloudstream {
 }
 
 android {
+    namespace = "com.ulgencs3.turkanime"
     defaultConfig {
         minSdk = 21
         compileSdk = 34

@@ -8,6 +8,7 @@ cloudstream {
 }
 
 android {
+    namespace = "com.ulgencs3.tranimeizle"
     defaultConfig {
         minSdk = 21
         compileSdk = 34

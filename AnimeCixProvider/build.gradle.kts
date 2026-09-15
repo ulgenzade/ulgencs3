@@ -8,6 +8,7 @@ cloudstream {
 }
 
 android {
+    namespace = "com.ulgencs3.animecix"
     defaultConfig {
         minSdk = 21
         compileSdk = 34

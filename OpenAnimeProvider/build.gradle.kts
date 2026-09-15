@@ -8,6 +8,7 @@ cloudstream {
 }
 
 android {
+    namespace = "com.ulgencs3.openanime"
     defaultConfig {
         minSdk = 21
         compileSdk = 34
