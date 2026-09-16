@@ -8,9 +8,7 @@ import org.jsoup.nodes.Element
  * Anizium Sağlayıcısı
  *
  * Site: https://anizium.co
- * Yapı: Modern PHP/Next.js hibrit platform
- * Özellik: 4K (2160p) video desteği
- * Kazıma: API + HTML hibrit
+ * Özellik: 4K (2160p) video ve çoklu gömülü oynatıcı desteği
  */
 class AniziumProvider : MainAPI() {
 
@@ -23,7 +21,7 @@ class AniziumProvider : MainAPI() {
     private val commonHeaders = mapOf(
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer" to mainUrl,
+        "Referer" to "$mainUrl/",
         "Accept" to "application/json, text/html, */*"
     )
 
@@ -38,10 +36,14 @@ class AniziumProvider : MainAPI() {
             ).text
             AppUtils.parseJson<Map<String, String>>(config)["anizium"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
+
+    // -------------------------------------------------------------------------
+    // Ana Sayfa
+    // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
         "content_type=anime&sort=last_episode" to "Son Bölümler",
@@ -52,7 +54,6 @@ class AniziumProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        // Önce API dene
         val apiResp = runCatching {
             app.get(
                 "$mainUrl/api/contents?${request.data}&page=$page",
@@ -60,19 +61,22 @@ class AniziumProvider : MainAPI() {
             ).parsedSafe<AniziumApiResp>()
         }.getOrNull()
 
-        val items = if (apiResp?.data != null) {
+        val items = if (apiResp?.data != null && apiResp.data.isNotEmpty()) {
             apiResp.data.mapNotNull { it.toSearchResponse() }
         } else {
-            // Fallback: HTML kazıma
             val doc = app.get(
                 "$mainUrl/anime-listesi?${request.data}&sayfa=$page",
                 headers = commonHeaders
             ).document
-            doc.select("div.anime-card, article.content-item").mapNotNull { it.toSearchResult() }
+            doc.select("div.anime-card, article.content-item, div.item").mapNotNull { it.toSearchResult() }
         }
 
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
     }
+
+    // -------------------------------------------------------------------------
+    // Arama
+    // -------------------------------------------------------------------------
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
@@ -83,36 +87,43 @@ class AniziumProvider : MainAPI() {
             ).parsedSafe<AniziumApiResp>()
         }.getOrNull()
 
-        if (apiResp?.data != null) return apiResp.data.mapNotNull { it.toSearchResponse() }
+        if (apiResp?.data != null && apiResp.data.isNotEmpty()) {
+            return apiResp.data.mapNotNull { it.toSearchResponse() }
+        }
 
         val doc = app.get("$mainUrl/arama?q=${query.encodeUrl()}", headers = commonHeaders).document
-        return doc.select("div.anime-card, article.content-item").mapNotNull { it.toSearchResult() }
+        return doc.select("div.anime-card, article.content-item, div.item").mapNotNull { it.toSearchResult() }
     }
+
+    // -------------------------------------------------------------------------
+    // Detay & Bölümler
+    // -------------------------------------------------------------------------
 
     override suspend fun load(url: String): LoadResponse {
         ensureInit()
         val doc = app.get(url, headers = commonHeaders).document
 
-        val title = doc.selectFirst("h1.content-title, h2.anime-title")?.text()?.trim()
-            ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Bilinmeyen"
+        val title = doc.selectFirst("h1.content-title, h2.anime-title, h1")?.text()?.trim()
+            ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Bilinmeyen Anime"
         val poster = fixUrlNull(
-            doc.selectFirst("div.content-poster img, img.anime-poster")?.attr("src")
+            doc.selectFirst("div.content-poster img, img.anime-poster, div.poster img")?.attr("data-src")
+                ?: doc.selectFirst("div.content-poster img, img.anime-poster, div.poster img")?.attr("src")
                 ?: doc.selectFirst("meta[property=og:image]")?.attr("content")
         )
-        val description = doc.selectFirst("div.content-desc, p.anime-desc")?.text()?.trim()
-        val tags = doc.select("a.genre-tag, span.tag").map { it.text().trim() }
+        val description = doc.selectFirst("div.content-desc, p.anime-desc, div.description")?.text()?.trim()
+        val tags = doc.select("a.genre-tag, span.tag, a[href*='tur']").map { it.text().trim() }
 
-        // 4K badge kontrolü
         val has4K = doc.selectFirst("span.quality-badge, div.quality")
             ?.text()?.contains("4K", ignoreCase = true) == true
 
-        val episodes = doc.select("div.episode-list a, ul.bolumler li a").mapNotNull { el ->
+        val episodes = doc.select("div.episode-list a, ul.bolumler li a, a[href*='bolum']").mapNotNull { el ->
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
             val epText = el.text().trim()
             val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
             newEpisode(epUrl) {
                 name = epText.ifBlank { "Bölüm $epNum" }
                 episode = epNum
+                season = 1
             }
         }.reversed()
 
@@ -124,6 +135,10 @@ class AniziumProvider : MainAPI() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Medya Oynatıcıları
+    // -------------------------------------------------------------------------
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -132,10 +147,13 @@ class AniziumProvider : MainAPI() {
     ): Boolean {
         ensureInit()
         val doc = app.get(data, headers = commonHeaders).document
+        val extractedUrls = mutableSetOf<String>()
 
-        // 4K linkleri önce ara
+        // 1. 4K ve yüksek kalite doğrudan kaynaklar
         doc.select("source[src]").forEach { source ->
             val src = fixUrlNull(source.attr("src")) ?: return@forEach
+            if (!extractedUrls.add(src)) return@forEach
+
             val label = source.attr("label").uppercase()
             val quality = when {
                 label.contains("4K") || label.contains("2160") -> Qualities.P2160.value
@@ -154,12 +172,28 @@ class AniziumProvider : MainAPI() {
             )
         }
 
-        // iframe embed'ler
+        // 2. Alternatif oynatıcı sekmeleri (Vidmoly, Sibnet, OkRu vb.)
+        doc.select("button[data-player], button[data-embed], a[data-frame], div[data-video], div.player-item").forEach { btn ->
+            val embed = fixUrlNull(
+                btn.attr("data-player").takeIf { it.isNotBlank() }
+                    ?: btn.attr("data-embed").takeIf { it.isNotBlank() }
+                    ?: btn.attr("data-frame").takeIf { it.isNotBlank() }
+                    ?: btn.attr("data-video")
+            ) ?: return@forEach
+
+            if (extractedUrls.add(embed)) {
+                loadExtractor(embed, mainUrl, subtitleCallback, callback)
+            }
+        }
+
+        // 3. iframe embed'ler
         doc.select("iframe[src], iframe[data-src]").forEach { iframe ->
             val src = fixUrlNull(
                 iframe.attr("src").takeIf { it.isNotBlank() } ?: iframe.attr("data-src")
             ) ?: return@forEach
-            loadExtractor(src, mainUrl, subtitleCallback, callback)
+            if (!src.contains("a-ads.com") && extractedUrls.add(src)) {
+                loadExtractor(src, mainUrl, subtitleCallback, callback)
+            }
         }
 
         return true

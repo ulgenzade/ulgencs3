@@ -1,16 +1,18 @@
 package com.ulgencs3.anizm
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
+import okhttp3.Interceptor
+import okhttp3.Response
 import org.jsoup.nodes.Element
 
 /**
  * Anizm Sağlayıcısı
  *
  * Site: https://anizm.net
- * Yapı: PHP tabanlı HTML sitesi
- * Kazıma: Jsoup DOM kazıma
- * Not: Cloudflare koruması var — User-Agent ile geçilebilir
+ * Korumalar: CloudflareKiller ile otomatik aşma
+ * Fandom & Oynatıcılar: Filemoon, Vidmoly, Sibnet, Streamtape, Doodstream, Mp4upload vb.
  */
 class AnizmProvider : MainAPI() {
 
@@ -20,10 +22,24 @@ class AnizmProvider : MainAPI() {
     override var lang = "tr"
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
+    private val cloudflareKiller by lazy { CloudflareKiller() }
+    private val cfInterceptor by lazy { CloudflareInterceptor(cloudflareKiller) }
+
+    class CloudflareInterceptor(private val cloudflareKiller: CloudflareKiller) : Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val request = chain.request()
+            val response = chain.proceed(request)
+            if (response.code == 403 || response.code == 503) {
+                return cloudflareKiller.intercept(chain)
+            }
+            return response
+        }
+    }
+
     private val commonHeaders = mapOf(
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer" to mainUrl,
+        "Referer" to "$mainUrl/",
         "Accept-Language" to "tr-TR,tr;q=0.9,en;q=0.8"
     )
 
@@ -38,10 +54,14 @@ class AnizmProvider : MainAPI() {
             ).text
             AppUtils.parseJson<Map<String, String>>(config)["anizm"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
+
+    // -------------------------------------------------------------------------
+    // Ana Sayfa
+    // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
         "$mainUrl/anime-listesi/?filtre=yeni-eklenenler&sayfa=" to "Yeni Eklenenler",
@@ -51,40 +71,51 @@ class AnizmProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val doc = app.get("${request.data}$page", headers = commonHeaders).document
-        val items = doc.select("div.animeCard, li.listItem").mapNotNull { it.toSearchResult() }
+        val doc = app.get("${request.data}$page", headers = commonHeaders, interceptor = cfInterceptor).document
+        val items = doc.select("div.animeCard, li.listItem, div.poster-item").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
     }
+
+    // -------------------------------------------------------------------------
+    // Arama
+    // -------------------------------------------------------------------------
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
         val doc = app.get(
             "$mainUrl/arama/?q=${query.encodeUrl()}",
-            headers = commonHeaders
+            headers = commonHeaders,
+            interceptor = cfInterceptor
         ).document
-        return doc.select("div.animeCard, li.listItem").mapNotNull { it.toSearchResult() }
+        return doc.select("div.animeCard, li.listItem, div.poster-item").mapNotNull { it.toSearchResult() }
     }
+
+    // -------------------------------------------------------------------------
+    // Detay & Bölüm Listesi
+    // -------------------------------------------------------------------------
 
     override suspend fun load(url: String): LoadResponse {
         ensureInit()
-        val doc = app.get(url, headers = commonHeaders).document
+        val doc = app.get(url, headers = commonHeaders, interceptor = cfInterceptor).document
 
-        val title = doc.selectFirst("h1.animeTitle, h2.animeName")?.text()?.trim()
-            ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Bilinmeyen"
+        val title = doc.selectFirst("h1.animeTitle, h2.animeName, h1.title")?.text()?.trim()
+            ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Bilinmeyen Anime"
         val poster = fixUrlNull(
-            doc.selectFirst("div.animePoster img, img.animeCover")?.attr("src")
+            doc.selectFirst("div.animePoster img, img.animeCover, div.poster img")?.attr("data-src")
+                ?: doc.selectFirst("div.animePoster img, img.animeCover, div.poster img")?.attr("src")
                 ?: doc.selectFirst("meta[property=og:image]")?.attr("content")
         )
-        val description = doc.selectFirst("p.animeDesc, div.animeDescription")?.text()?.trim()
-        val tags = doc.select("div.animeGenres a, span.genre").map { it.text().trim() }
+        val description = doc.selectFirst("p.animeDesc, div.animeDescription, div.summary")?.text()?.trim()
+        val tags = doc.select("div.animeGenres a, span.genre, a[href*='tur']").map { it.text().trim() }
 
-        val episodes = doc.select("ul.episodeList li a, div.episodeItem a").mapNotNull { el ->
+        val episodes = doc.select("ul.episodeList li a, div.episodeItem a, a[href*='-bolum']").mapNotNull { el ->
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
             val epText = el.text().trim()
             val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
             newEpisode(epUrl) {
                 name = epText.ifBlank { "Bölüm $epNum" }
                 episode = epNum
+                season = 1
             }
         }.reversed()
 
@@ -96,6 +127,10 @@ class AnizmProvider : MainAPI() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Video Linkleri & Oynatıcı Çıkarıcı
+    // -------------------------------------------------------------------------
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -103,37 +138,73 @@ class AnizmProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         ensureInit()
-        val doc = app.get(data, headers = commonHeaders).document
+        val doc = app.get(data, headers = commonHeaders, interceptor = cfInterceptor).document
+        val extractedUrls = mutableSetOf<String>()
 
-        // iframe embed'leri
+        // 1. Alternatif sekmeler ve butonlar (Fansub & Medya Oynatıcıları)
+        doc.select("div.fansub-item, ul.nav-tabs li a, button[data-embed], a[data-frame], div[data-src], a[data-url]").forEach { el ->
+            val src = fixUrlNull(
+                el.attr("data-embed").takeIf { it.isNotBlank() }
+                    ?: el.attr("data-frame").takeIf { it.isNotBlank() }
+                    ?: el.attr("data-src").takeIf { it.isNotBlank() }
+                    ?: el.attr("data-url")
+            ) ?: return@forEach
+            if (extractedUrls.add(src)) {
+                loadExtractor(src, mainUrl, subtitleCallback, callback)
+            }
+        }
+
+        // 2. iframe embed'leri
         doc.select("iframe[src], iframe[data-src]").forEach { iframe ->
             val src = fixUrlNull(
                 iframe.attr("src").takeIf { it.isNotBlank() } ?: iframe.attr("data-src")
             ) ?: return@forEach
-            loadExtractor(src, mainUrl, subtitleCallback, callback)
+            if (!src.contains("a-ads.com") && extractedUrls.add(src)) {
+                loadExtractor(src, mainUrl, subtitleCallback, callback)
+            }
         }
 
-        // Doğrudan video bağlantıları
+        // 3. Doğrudan video bağlantıları & m3u8
         doc.select("source[src]").forEach { source ->
             val src = fixUrlNull(source.attr("src")) ?: return@forEach
-            val type = source.attr("type")
-            callback(
-                newExtractorLink(
-                    source = name,
-                    name = name,
-                    url = src,
-                    type = if (type.contains("mpegurl") || src.contains("m3u8"))
-                        ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+            if (extractedUrls.add(src)) {
+                val type = source.attr("type")
+                callback(
+                    newExtractorLink(
+                        source = name,
+                        name = name,
+                        url = src,
+                        type = if (type.contains("mpegurl") || src.contains("m3u8"))
+                            ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                    )
                 )
-            )
+            }
         }
+
+        // 4. Script içindeki linkler
+        val scriptContent = doc.select("script").joinToString("\n") { it.data() }
+        Regex("""(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']""")
+            .findAll(scriptContent)
+            .forEach { match ->
+                val videoUrl = match.groupValues[1]
+                if (extractedUrls.add(videoUrl)) {
+                    callback(
+                        newExtractorLink(
+                            source = name,
+                            name = name,
+                            url = videoUrl,
+                            type = if (videoUrl.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                        )
+                    )
+                }
+            }
 
         return true
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
         val a = selectFirst("a") ?: return null
-        val title = selectFirst("div.animeName, span.title, h3")?.text()?.trim()
+        val title = selectFirst("div.animeName, span.title, h3, div.title")?.text()?.trim()
             ?: a.attr("title").takeIf { it.isNotBlank() }
             ?: return null
         val url = fixUrlNull(a.attr("href")) ?: return null

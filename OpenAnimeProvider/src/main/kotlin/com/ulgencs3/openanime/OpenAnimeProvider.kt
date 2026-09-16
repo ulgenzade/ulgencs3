@@ -8,9 +8,9 @@ import org.jsoup.nodes.Element
 /**
  * OpenAnime Sağlayıcısı
  *
- * Site: https://openani.me
+ * Site: https://openani.me / https://openanime.org
  * Yapı: Next.js tabanlı SPA
- * Veri Yöntemi: __NEXT_DATA__ JSON parse — DOM kazımadan çok daha stabil
+ * Oynatıcılar: Doğrudan HLS (m3u8), harici embed oynatıcılar (Vidmoly, Sibnet, Doodstream vb.)
  */
 class OpenAnimeProvider : MainAPI() {
 
@@ -23,10 +23,9 @@ class OpenAnimeProvider : MainAPI() {
     private val commonHeaders = mapOf(
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer" to mainUrl
+        "Referer" to "$mainUrl/"
     )
 
-    // Next.js build ID — sayfa yüklenince güncellenir
     private var nextBuildId: String? = null
     private var isInitialized = false
 
@@ -40,22 +39,24 @@ class OpenAnimeProvider : MainAPI() {
             AppUtils.parseJson<Map<String, String>>(config)["openanime"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
 
-            // __NEXT_DATA__'dan buildId çek
             val doc = app.get(mainUrl, headers = commonHeaders).document
             val nextData = doc.selectFirst("script#__NEXT_DATA__")?.data()
             if (nextData != null) {
                 nextBuildId = JSONObject(nextData).optString("buildId").takeIf { it.isNotBlank() }
             }
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
-    /** Next.js API URL oluştur */
     private fun nextApiUrl(path: String): String {
         val bid = nextBuildId ?: return "$mainUrl/api$path"
         return "$mainUrl/_next/data/$bid$path.json"
     }
+
+    // -------------------------------------------------------------------------
+    // Ana Sayfa
+    // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
         "/latest"  to "Son Bölümler",
@@ -68,7 +69,6 @@ class OpenAnimeProvider : MainAPI() {
         val items = mutableListOf<SearchResponse>()
 
         try {
-            // Next.js data API yolu
             val url = "${nextApiUrl(request.data)}?page=$page"
             val resp = app.get(url, headers = commonHeaders).text
             val json = JSONObject(resp)
@@ -90,16 +90,20 @@ class OpenAnimeProvider : MainAPI() {
                     })
                 }
             }
-        } catch (e: Exception) {
-            // Fallback: HTML kazıma
+        } catch (_: Exception) {
             val doc = app.get("$mainUrl${request.data}?page=$page", headers = commonHeaders).document
-            items.addAll(doc.select("div.anime-card, article").mapNotNull { it.toSearchResult() })
+            items.addAll(doc.select("div.anime-card, article, div.card").mapNotNull { it.toSearchResult() })
         }
 
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
     }
 
+    // -------------------------------------------------------------------------
+    // Arama
+    // -------------------------------------------------------------------------
+
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         return try {
             val resp = app.get(
                 "$mainUrl/api/search?q=${query.encodeUrl()}",
@@ -122,13 +126,18 @@ class OpenAnimeProvider : MainAPI() {
                 }
             }
             items
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             val doc = app.get("$mainUrl/search?q=${query.encodeUrl()}", headers = commonHeaders).document
-            doc.select("div.anime-card, article").mapNotNull { it.toSearchResult() }
+            doc.select("div.anime-card, article, div.card").mapNotNull { it.toSearchResult() }
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Detay & Bölümler
+    // -------------------------------------------------------------------------
+
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val slug = url.substringAfterLast("/")
         val title: String
         val poster: String?
@@ -144,9 +153,9 @@ class OpenAnimeProvider : MainAPI() {
             val anime = props?.optJSONObject("anime") ?: props
 
             title = anime?.optString("title")?.takeIf { it.isNotBlank() }
-                ?: anime?.optString("name") ?: "Bilinmeyen"
+                ?: anime?.optString("name") ?: "Bilinmeyen Anime"
             poster = fixUrlNull(
-                anime?.optString("coverImage")?.takeIf { it.isNotBlank() }
+                anime?.optString("coverImage").takeIf { !it.isNullOrBlank() }
                     ?: anime?.optString("image")
             )
             description = anime?.optString("description")?.takeIf { it.isNotBlank() }
@@ -157,7 +166,6 @@ class OpenAnimeProvider : MainAPI() {
                 }
             }
 
-            // Bölümler
             val epsArray = anime?.optJSONArray("episodes")
             if (epsArray != null) {
                 for (i in 0 until epsArray.length()) {
@@ -168,14 +176,14 @@ class OpenAnimeProvider : MainAPI() {
                     episodes.add(newEpisode("$mainUrl/anime/$slug/$epSlug") {
                         name = epTitle
                         episode = epNum
+                        season = 1
                         posterUrl = fixUrlNull(ep.optString("thumbnail"))
                     })
                 }
             }
-        } catch (e: Exception) {
-            // HTML fallback
+        } catch (_: Exception) {
             val doc = app.get(url, headers = commonHeaders).document
-            val t = doc.selectFirst("h1, h2.anime-title")?.text()?.trim() ?: "Bilinmeyen"
+            val t = doc.selectFirst("h1, h2.anime-title")?.text()?.trim() ?: "Bilinmeyen Anime"
             return newAnimeLoadResponse(t, url, TvType.Anime) {
                 this.posterUrl = fixUrlNull(doc.selectFirst("img.cover, div.poster img")?.attr("src"))
                 this.plot = doc.selectFirst("div.desc, p.description")?.text()?.trim()
@@ -190,52 +198,72 @@ class OpenAnimeProvider : MainAPI() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Video Bağlantıları
+    // -------------------------------------------------------------------------
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         val doc = app.get(data, headers = commonHeaders).document
+        val extractedUrls = mutableSetOf<String>()
 
-        // __NEXT_DATA__ içinden video bağlantısı bul
+        // 1. __NEXT_DATA__ içindeki video kaynakları
         val nextDataText = doc.selectFirst("script#__NEXT_DATA__")?.data()
         if (nextDataText != null) {
             try {
                 val json = JSONObject(nextDataText)
                 val props = json.optJSONObject("props")?.optJSONObject("pageProps")
-                val videoSources = props?.optJSONArray("sources") ?: props?.optJSONArray("videos")
+                val videoSources = props?.optJSONArray("sources")
+                    ?: props?.optJSONArray("videos")
+                    ?: props?.optJSONArray("players")
+
                 if (videoSources != null) {
                     for (i in 0 until videoSources.length()) {
                         val src = videoSources.getJSONObject(i)
                         val srcUrl = src.optString("url").takeIf { it.isNotBlank() } ?: continue
-                        val label = src.optString("label", "")
-                        val quality = when {
-                            label.contains("1080") -> Qualities.P1080.value
-                            label.contains("720")  -> Qualities.P720.value
-                            label.contains("480")  -> Qualities.P480.value
-                            else                   -> Qualities.Unknown.value
+                        if (!extractedUrls.add(srcUrl)) continue
+
+                        val label = src.optString("label", src.optString("name", "Player"))
+                        if (srcUrl.contains(".m3u8") || srcUrl.contains(".mp4")) {
+                            val quality = when {
+                                label.contains("1080") -> Qualities.P1080.value
+                                label.contains("720")  -> Qualities.P720.value
+                                label.contains("480")  -> Qualities.P480.value
+                                else                   -> Qualities.Unknown.value
+                            }
+                            callback(
+                                newExtractorLink(
+                                    source = name,
+                                    name = "$name [$label]",
+                                    url = srcUrl,
+                                    type = if (srcUrl.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                                ) { this.quality = quality }
+                            )
+                        } else {
+                            loadExtractor(srcUrl, mainUrl, subtitleCallback, callback)
                         }
-                        callback(
-                            newExtractorLink(
-                                source = name,
-                                name = "$name [$label]",
-                                url = srcUrl,
-                                type = if (srcUrl.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                            ) { this.quality = quality }
-                        )
                     }
-                    return true
                 }
-            } catch (e: Exception) { }
+            } catch (_: Exception) { }
         }
 
-        // Fallback: iframe'ler
-        doc.select("iframe[src], iframe[data-src]").forEach { iframe ->
+        // 2. iframe embed'leri (Vidmoly, Sibnet vb.)
+        doc.select("iframe[src], iframe[data-src], div[data-video], div[data-player]").forEach { iframe ->
             val src = fixUrlNull(
-                iframe.attr("src").takeIf { it.isNotBlank() } ?: iframe.attr("data-src")
+                iframe.attr("src").takeIf { it.isNotBlank() }
+                    ?: iframe.attr("data-src").takeIf { it.isNotBlank() }
+                    ?: iframe.attr("data-video").takeIf { it.isNotBlank() }
+                    ?: iframe.attr("data-player")
             ) ?: return@forEach
-            loadExtractor(src, mainUrl, subtitleCallback, callback)
+
+            if (!src.contains("a-ads.com") && extractedUrls.add(src)) {
+                loadExtractor(src, mainUrl, subtitleCallback, callback)
+            }
         }
 
         return true
@@ -243,11 +271,12 @@ class OpenAnimeProvider : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse? {
         val a = selectFirst("a") ?: return null
-        val title = selectFirst("h3, div.title, span.name")?.text()?.trim()
+        val title = selectFirst("h3, div.title, span.name, h2")?.text()?.trim()
             ?: a.attr("title").takeIf { it.isNotBlank() } ?: return null
         val url = fixUrlNull(a.attr("href")) ?: return null
         val poster = fixUrlNull(
             selectFirst("img")?.attr("src")?.takeIf { !it.contains("base64") }
+                ?: selectFirst("img")?.attr("data-src")
         )
         return newAnimeSearchResponse(title, url, TvType.Anime) {
             this.posterUrl = poster

@@ -1,15 +1,16 @@
 package com.ulgencs3.animecix
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 
 /**
  * AnimeCiX Sağlayıcısı
  *
  * Site: https://animecix.tv
- * Yapı: Angular SPA — REST API tabanlı
- * API Base: /api/v1/
- * Auth: İlk yüklemede cookie'den XSRF-TOKEN al
+ * API Base: /secure/
+ * Oynatıcılar: TauVideo (tau-video.xyz), Best-Video yönlendirmeleri, harici gömülü oynatıcılar.
  */
 class AnimeCixProvider : MainAPI() {
 
@@ -19,43 +20,29 @@ class AnimeCixProvider : MainAPI() {
     override var lang = "tr"
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
-    private val apiUrl = "$mainUrl/api/v1"
+    override var sequentialMainPage = true
+    override var sequentialMainPageDelay = 200L
+    override var sequentialMainPageScrollDelay = 200L
 
-    private val commonHeaders = mapOf(
+    private val authHeaders = mapOf(
+        "x-e-h" to "7Y2ozlO+QysR5w9Q6Tupmtvl9jJp7ThFH8SB+Lo7NvZjgjqRSqOgcT2v4ISM9sP10LmnlYI8WQ==.xrlyOBFS5BHjQ2Lk",
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer" to mainUrl,
-        "Accept" to "application/json, text/plain, */*",
-        "X-Requested-With" to "XMLHttpRequest"
+        "Referer" to "$mainUrl/"
     )
 
-    // XSRF token — ilk istekten cookie'den alınır
-    private var xsrfToken: String? = null
     private var isInitialized = false
 
     private suspend fun ensureInit() {
         if (isInitialized) return
         isInitialized = true
         try {
-            // domains.json'dan güncel domain çek
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
             ).text
             AppUtils.parseJson<Map<String, String>>(config)["animecix"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
-
-            // XSRF token çek
-            val resp = app.get(mainUrl, headers = commonHeaders)
-            xsrfToken = resp.cookies["XSRF-TOKEN"]
-        } catch (e: Exception) { }
-    }
-
-    private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
-
-    private fun authHeaders(): Map<String, String> {
-        return if (xsrfToken != null) {
-            commonHeaders + mapOf("X-XSRF-TOKEN" to (xsrfToken ?: ""))
-        } else commonHeaders
+        } catch (_: Exception) { }
     }
 
     // -------------------------------------------------------------------------
@@ -63,24 +50,49 @@ class AnimeCixProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "anime&sort=release_date" to "Son Eklenenler",
-        "anime&sort=popularity"   to "En Popüler",
-        "anime&status=ongoing"    to "Devam Edenler",
-        "anime&status=completed"  to "Tamamlananlar"
+        "$mainUrl/secure/last-episodes"                          to "Son Eklenen Bölümler",
+        "$mainUrl/secure/titles?type=series&onlyStreamable=true" to "Seriler",
+        "$mainUrl/secure/titles?type=movie&onlyStreamable=true"  to "Filmler"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val resp = app.get(
-            "$apiUrl/titles?type=${request.data}&page=$page&perPage=20",
-            headers = authHeaders()
-        )
-        val json = resp.parsedSafe<ApiResponse>() ?: return newHomePageResponse(emptyList())
-        val items = json.data?.mapNotNull { it.toSearchResponse() } ?: emptyList()
-        return newHomePageResponse(
-            HomePageList(request.name, items),
-            hasNext = json.meta?.currentPage != json.meta?.lastPage
-        )
+        return if (request.data.contains("/last-episodes")) {
+            val response = app.get(
+                "$mainUrl/secure/last-episodes?page=$page&perPage=10",
+                headers = authHeaders
+            ).parsedSafe<LastEpisodesResponse>()?.data ?: emptyList()
+
+            val home = response.map {
+                val formattedTitle = "S${it.seasonNumber}B${it.episodeNumber} - ${it.titleName}"
+                newAnimeSearchResponse(
+                    formattedTitle,
+                    "$mainUrl/secure/titles/${it.titleId}?titleId=${it.titleId}",
+                    TvType.Anime
+                ) {
+                    this.posterUrl = fixUrlNull(it.titlePoster)
+                }
+            }
+
+            newHomePageResponse(request.name, home)
+        } else {
+            val response = app.get(
+                "${request.data}&page=$page&perPage=16",
+                headers = authHeaders
+            ).parsedSafe<Category>()
+
+            val home = response?.pagination?.data?.map { anime ->
+                newAnimeSearchResponse(
+                    anime.title,
+                    "$mainUrl/secure/titles/${anime.id}?titleId=${anime.id}",
+                    TvType.Anime
+                ) {
+                    this.posterUrl = fixUrlNull(anime.poster)
+                }
+            } ?: emptyList()
+
+            newHomePageResponse(request.name, home)
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -89,60 +101,77 @@ class AnimeCixProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val resp = app.get(
-            "$apiUrl/search?query=${query.encodeUrl()}&type=anime",
-            headers = authHeaders()
-        )
-        return resp.parsedSafe<ApiResponse>()?.data
-            ?.mapNotNull { it.toSearchResponse() }
-            ?: emptyList()
+        val response = app.get(
+            "$mainUrl/secure/search/$query?limit=20",
+            headers = authHeaders
+        ).parsedSafe<Search>() ?: return emptyList()
+
+        return response.results.map { anime ->
+            newAnimeSearchResponse(
+                anime.title,
+                "$mainUrl/secure/titles/${anime.id}?titleId=${anime.id}",
+                TvType.Anime
+            ) {
+                this.posterUrl = fixUrlNull(anime.poster)
+            }
+        }
     }
 
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
+
     // -------------------------------------------------------------------------
-    // Detay
+    // Detay & Bölümler
     // -------------------------------------------------------------------------
 
-    override suspend fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse? {
         ensureInit()
-        val id = url.substringAfterLast("/")
-        val resp = app.get("$apiUrl/titles/$id", headers = authHeaders())
-        val item = resp.parsedSafe<ApiItem>()
-            ?: return newAnimeLoadResponse(url, url, TvType.Anime) { }
-
-        val title = item.name ?: item.title ?: "Bilinmeyen"
-        val poster = item.poster ?: item.image
-        val description = item.description ?: item.overview
-
-        // Sezon ve bölüm listesi
+        val response = app.get(url, headers = authHeaders).parsedSafe<Title>() ?: return null
         val episodes = mutableListOf<Episode>()
-        item.seasons?.forEach { season ->
-            season.episodes?.forEach { ep ->
-                episodes.add(newEpisode("$mainUrl/titles/$id/s${season.number}/e${ep.number}") {
-                    name = ep.name ?: "Bölüm ${ep.number}"
-                    episode = ep.number
-                    this.season = season.number
-                    posterUrl = ep.poster
+        val titleId = url.substringAfter("?titleId=")
+
+        if (response.title?.titleType == "anime" || response.title?.seasons?.isNotEmpty() == true) {
+            for (sezon in response.title.seasons) {
+                val sezonResponse = app.get(
+                    "$mainUrl/secure/related-videos?episode=1&season=${sezon.number}&videoId=0&titleId=$titleId",
+                    headers = authHeaders
+                ).parsedSafe<TitleVideos>()
+
+                sezonResponse?.videos?.forEach { video ->
+                    episodes.add(newEpisode(video.url) {
+                        this.name = "${video.seasonNum ?: sezon.number}. Sezon ${video.episodeNum ?: 1}. Bölüm"
+                        this.season = video.seasonNum ?: sezon.number
+                        this.episode = video.episodeNum ?: 1
+                    })
+                }
+            }
+        } else {
+            if (response.title?.videos?.isNotEmpty() == true) {
+                episodes.add(newEpisode(response.title.videos.first().url) {
+                    this.name = "Filmi İzle"
+                    this.season = 1
+                    this.episode = 1
                 })
             }
         }
 
-        // Sezon yoksa tek bölüm filmi gibi davran
-        if (episodes.isEmpty()) {
-            episodes.add(newEpisode("$mainUrl/titles/$id") {
-                name = title
-            })
-        }
-
-        return newAnimeLoadResponse(title, url, TvType.Anime) {
-            this.posterUrl = poster
-            this.plot = description
-            this.tags = item.genres?.map { it.displayName ?: it.name ?: "" }
-            addEpisodes(DubStatus.Subbed, episodes)
+        val anime = response.title ?: return null
+        return newTvSeriesLoadResponse(
+            anime.title,
+            "$mainUrl/secure/titles/${anime.id}?titleId=${anime.id}",
+            TvType.Anime,
+            episodes
+        ) {
+            this.posterUrl = fixUrlNull(anime.poster)
+            this.year = anime.year
+            this.plot = anime.description
+            this.tags = anime.tags.mapNotNull { it.name }
+            addActors(anime.actors.map { Actor(it.name, fixUrlNull(it.poster)) })
+            addTrailer(anime.trailer)
         }
     }
 
     // -------------------------------------------------------------------------
-    // Video Linkleri
+    // Video Oynatıcı Bağlantıları
     // -------------------------------------------------------------------------
 
     override suspend fun loadLinks(
@@ -152,91 +181,29 @@ class AnimeCixProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         ensureInit()
-        // URL'den id, season, episode bilgisi çıkar
-        val regex = Regex("""/titles/(\d+)(?:/s(\d+)/e(\d+))?""")
-        val match = regex.find(data) ?: return false
+        val pageUrl = if (data.startsWith("http")) data else "$mainUrl/$data"
+        val response = app.get(pageUrl, referer = "$mainUrl/")
+        var iframeLink = response.url
 
-        val titleId = match.groupValues[1]
-        val seasonNum = match.groupValues[2].toIntOrNull() ?: 1
-        val episodeNum = match.groupValues[3].toIntOrNull() ?: 1
-
-        val streamsUrl = "$apiUrl/titles/$titleId/seasons/$seasonNum/episodes/$episodeNum/streams"
-        val resp = app.get(streamsUrl, headers = authHeaders())
-        val streams = resp.parsedSafe<StreamsResponse>() ?: return false
-
-        streams.streams?.forEach { stream ->
-            val url = stream.url ?: return@forEach
-            val quality = when {
-                url.contains("2160") || url.contains("4k", ignoreCase = true) -> Qualities.P2160.value
-                url.contains("1080") -> Qualities.P1080.value
-                url.contains("720") -> Qualities.P720.value
-                url.contains("480") -> Qualities.P480.value
-                else -> Qualities.Unknown.value
-            }
-            callback(
-                newExtractorLink(
-                    source = name,
-                    name = "${stream.label ?: name} [${stream.type ?: ""}]",
-                    url = url,
-                    type = if (url.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                ) { this.quality = quality }
-            )
+        // Çift URL düzeltmesi
+        val doubleUrlRegex = Regex("https://animecix.tv/(https://animecix.tv/secure/\\S+)")
+        val match = doubleUrlRegex.find(iframeLink)
+        if (match != null) {
+            iframeLink = match.groupValues[1]
         }
 
-        // Altyazılar
-        streams.subtitles?.forEach { sub ->
-            subtitleCallback(SubtitleFile(sub.label ?: "TR", sub.url ?: return@forEach))
+        if (iframeLink.contains("/secure/best-video")) {
+            val redirectResponse = app.get(iframeLink, referer = "$mainUrl/")
+            val redirectedUrl = redirectResponse.url
+            if (redirectedUrl.contains("tau-video")) {
+                loadExtractor(redirectedUrl, "$mainUrl/", subtitleCallback, callback)
+            } else {
+                loadExtractor(redirectedUrl, "$mainUrl/", subtitleCallback, callback)
+            }
+        } else {
+            loadExtractor(iframeLink, "$mainUrl/", subtitleCallback, callback)
         }
 
         return true
     }
-
-    // -------------------------------------------------------------------------
-    // Veri modelleri
-    // -------------------------------------------------------------------------
-
-    data class ApiResponse(
-        val data: List<ApiItem>? = null,
-        val meta: Meta? = null
-    )
-
-    data class Meta(
-        val currentPage: Int? = null,
-        val lastPage: Int? = null
-    )
-
-    data class ApiItem(
-        val id: Int? = null,
-        val name: String? = null,
-        val title: String? = null,
-        val poster: String? = null,
-        val image: String? = null,
-        val description: String? = null,
-        val overview: String? = null,
-        val genres: List<Genre>? = null,
-        val seasons: List<Season>? = null,
-        val type: String? = null
-    )
-
-    private fun ApiItem.toSearchResponse(): SearchResponse? {
-        val t = name ?: title ?: return null
-        val url = "https://animecix.tv/titles/${id ?: return null}"
-        return newAnimeSearchResponse(t, url, TvType.Anime) {
-            this.posterUrl = poster ?: image
-        }
-    }
-
-    data class Genre(val name: String? = null, val displayName: String? = null)
-    data class Season(val number: Int? = null, val episodes: List<EpisodeItem>? = null)
-    data class EpisodeItem(
-        val number: Int? = null,
-        val name: String? = null,
-        val poster: String? = null
-    )
-    data class StreamsResponse(
-        val streams: List<Stream>? = null,
-        val subtitles: List<Subtitle>? = null
-    )
-    data class Stream(val url: String? = null, val label: String? = null, val type: String? = null)
-    data class Subtitle(val url: String? = null, val label: String? = null)
 }

@@ -43,6 +43,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
@@ -50,9 +55,9 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/src
           chmod +x gradlew
-          ./gradlew make makePluginsJson
+          ./gradlew make || ./gradlew make --stacktrace
           find . -name "*.cs3" -exec cp {} $GITHUB_WORKSPACE/builds/ \;
-          cp build/plugins.json $GITHUB_WORKSPACE/builds/ || true
+          python3 make_plugins_json.py $GITHUB_WORKSPACE/builds ${{ github.repository }}
           ls -la $GITHUB_WORKSPACE/builds/
 
       - name: Push builds
