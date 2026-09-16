@@ -9,6 +9,8 @@ on:
     branches:
       - master
       - main
+      - dev
+      - develop
     paths-ignore:
       - '*.md'
   workflow_dispatch:
