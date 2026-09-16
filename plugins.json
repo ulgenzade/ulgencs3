@@ -1,0 +1,128 @@
+[
+  {
+    "name": "AnimeCiX",
+    "internalName": "AnimeCixProvider",
+    "pluginClassName": "com.ulgencs3.animecix.AnimeCixPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnimeCixProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 28833,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Anime",
+      "AnimeMovie",
+      "OVA"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "AnimeciX resmi REST API ve TauVideo oynatıcı desteği ile yüksek hızlı anime akışı.",
+    "iconUrl": "https://animecix.tv/favicon.ico"
+  },
+  {
+    "name": "Anizium",
+    "internalName": "AniziumProvider",
+    "pluginClassName": "com.ulgencs3.anizium.AniziumPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AniziumProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 19694,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Anime",
+      "AnimeMovie",
+      "OVA"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Anizium anime platformu. 4K Ultra HD (2160p) video ve zengin alternatif oynatıcı desteği.",
+    "iconUrl": "https://anizium.co/favicon.ico"
+  },
+  {
+    "name": "Anizm",
+    "internalName": "AnizmProvider",
+    "pluginClassName": "com.ulgencs3.anizm.AnizmPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnizmProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 17257,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Anime",
+      "AnimeMovie",
+      "OVA"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Anizm anime arşivi. Cloudflare Turnstile koruması aşımı ve çoklu gömülü oynatıcı desteği.",
+    "iconUrl": "https://anizm.net/favicon.ico"
+  },
+  {
+    "name": "OpenAnime",
+    "internalName": "OpenAnimeProvider",
+    "pluginClassName": "com.ulgencs3.openanime.OpenAnimePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/OpenAnimeProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 19143,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Anime",
+      "AnimeMovie",
+      "OVA"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "OpenAnime Next.js modern anime platformu. Doğrudan HLS m3u8 akışları ve alternatif oynatıcılar.",
+    "iconUrl": "https://openani.me/favicon.ico"
+  },
+  {
+    "name": "TrAnimeİzle",
+    "internalName": "TrAnimeIzleProvider",
+    "pluginClassName": "com.ulgencs3.tranimeizle.TrAnimeIzlePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TrAnimeIzleProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 15613,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Anime",
+      "AnimeMovie",
+      "OVA"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "TrAnimeİzle arşivi. Çoklu alternatif sunucu ve harici oynatıcı desteği.",
+    "iconUrl": "https://www.tranimeizle.io/favicon.ico"
+  },
+  {
+    "name": "Türk Anime TV",
+    "internalName": "TurkAnimeProvider",
+    "pluginClassName": "com.ulgencs3.turkanime.TurkAnimePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TurkAnimeProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 21934,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Anime",
+      "AnimeMovie",
+      "OVA"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Türkiye'nin en büyük anime arşivi. Tüm fandom/çeviri grupları (AniSekai, Benihime, PuzzleSubs vb.) ve tüm medya oynatıcıları (Sibnet, OK.ru, Mail.ru, Doodstream, VOE, Vudea, M3U8 vb.) desteklenir.",
+    "iconUrl": "https://www.turkanime.tv/imajlar/favicon.ico"
+  }
+]
