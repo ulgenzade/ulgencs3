@@ -116,7 +116,7 @@ class TurkAnimeProvider : MainAPI() {
             val bolumlerDoc = app.get(
                 bolumlerUrl,
                 headers = mapOf(
-                    "User-Agent" to commonHeaders["User-Agent"]!!,
+                    "User-Agent" to (commonHeaders["User-Agent"] ?: ""),
                     "X-Requested-With" to "XMLHttpRequest",
                     "Referer" to url,
                     "token" to token
@@ -164,7 +164,7 @@ class TurkAnimeProvider : MainAPI() {
     // AES Şifre Çözücü & Video Oynatıcı Ayrıştırma
     // -------------------------------------------------------------------------
 
-    private fun iframe2AesLink(iframe: String): String? {
+    private suspend fun iframe2AesLink(iframe: String): String? {
         return try {
             val aesDataRaw = iframe.substringAfter("embed/#/url/").substringBefore("?status")
             val aesDataJson = String(Base64.decode(aesDataRaw, Base64.DEFAULT))
@@ -204,7 +204,7 @@ class TurkAnimeProvider : MainAPI() {
                     val subResp = app.get(
                         fullSubLink,
                         headers = mapOf(
-                            "User-Agent" to commonHeaders["User-Agent"]!,
+                            "User-Agent" to (commonHeaders["User-Agent"] ?: ""),
                             "X-Requested-With" to "XMLHttpRequest",
                             "Referer" to data
                         ),
@@ -248,7 +248,7 @@ class TurkAnimeProvider : MainAPI() {
                             val pResp = app.get(
                                 pFullLink,
                                 headers = mapOf(
-                                    "User-Agent" to commonHeaders["User-Agent"]!,
+                                    "User-Agent" to (commonHeaders["User-Agent"] ?: ""),
                                     "X-Requested-With" to "XMLHttpRequest",
                                     "Referer" to fullSubLink
                                 ),
@@ -265,8 +265,8 @@ class TurkAnimeProvider : MainAPI() {
             }
         } else {
             // Buton bulunamazsa sayfadaki doğrudan iframe'leri dene
-            doc.select("iframe[src]").forEach { iframe ->
-                val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
+            for (iframe in doc.select("iframe[src]")) {
+                val src = fixUrlNull(iframe.attr("src")) ?: continue
                 if (!src.contains("a-ads.com")) {
                     resolveAndLoadPlayer(src, "Türk Anime", "Player", data, subtitleCallback, callback)
                 }
