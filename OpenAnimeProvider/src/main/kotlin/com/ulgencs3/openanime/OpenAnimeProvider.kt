@@ -18,7 +18,6 @@ class OpenAnimeProvider : MainAPI() {
     override var name = "OpenAnime"
     override val hasMainPage = true
     override var lang = "tr"
-    override val hasSearch = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
     private val commonHeaders = mapOf(
@@ -29,8 +28,11 @@ class OpenAnimeProvider : MainAPI() {
 
     // Next.js build ID — sayfa yüklenince güncellenir
     private var nextBuildId: String? = null
+    private var isInitialized = false
 
-    override suspend fun init() {
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
         try {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
@@ -62,6 +64,7 @@ class OpenAnimeProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val items = mutableListOf<SearchResponse>()
 
         try {

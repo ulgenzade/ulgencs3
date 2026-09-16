@@ -18,7 +18,6 @@ class AniziumProvider : MainAPI() {
     override var name = "Anizium"
     override val hasMainPage = true
     override var lang = "tr"
-    override val hasSearch = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
     private val commonHeaders = mapOf(
@@ -28,7 +27,11 @@ class AniziumProvider : MainAPI() {
         "Accept" to "application/json, text/html, */*"
     )
 
-    override suspend fun init() {
+    private var isInitialized = false
+
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
         try {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
@@ -48,6 +51,7 @@ class AniziumProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         // Önce API dene
         val apiResp = runCatching {
             app.get(
@@ -71,6 +75,7 @@ class AniziumProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val apiResp = runCatching {
             app.get(
                 "$mainUrl/api/search?q=${query.encodeUrl()}&content_type=anime",
@@ -85,6 +90,7 @@ class AniziumProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val doc = app.get(url, headers = commonHeaders).document
 
         val title = doc.selectFirst("h1.content-title, h2.anime-title")?.text()?.trim()
@@ -124,6 +130,7 @@ class AniziumProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         val doc = app.get(data, headers = commonHeaders).document
 
         // 4K linkleri önce ara
@@ -131,7 +138,7 @@ class AniziumProvider : MainAPI() {
             val src = fixUrlNull(source.attr("src")) ?: return@forEach
             val label = source.attr("label").uppercase()
             val quality = when {
-                label.contains("4K") || label.contains("2160") -> Qualities.UHD_4K.value
+                label.contains("4K") || label.contains("2160") -> Qualities.P2160.value
                 label.contains("1080") -> Qualities.P1080.value
                 label.contains("720")  -> Qualities.P720.value
                 label.contains("480")  -> Qualities.P480.value
@@ -169,13 +176,13 @@ class AniziumProvider : MainAPI() {
         val name: String? = null,
         val poster: String? = null,
         val slug: String? = null
-    ) {
-        fun toSearchResponse(): SearchResponse? {
-            val t = title ?: name ?: return null
-            val url = "https://anizium.co/anime/${slug ?: id ?: return null}"
-            return newAnimeSearchResponse(t, url, TvType.Anime) {
-                this.posterUrl = poster
-            }
+    )
+
+    private fun AniziumItem.toSearchResponse(): SearchResponse? {
+        val t = title ?: name ?: return null
+        val url = "https://anizium.co/anime/${slug ?: id ?: return null}"
+        return newAnimeSearchResponse(t, url, TvType.Anime) {
+            this.posterUrl = poster
         }
     }
 

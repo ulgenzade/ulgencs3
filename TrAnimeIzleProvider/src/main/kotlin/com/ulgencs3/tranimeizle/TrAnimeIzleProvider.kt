@@ -17,7 +17,6 @@ class TrAnimeIzleProvider : MainAPI() {
     override var name = "TrAnimeİzle"
     override val hasMainPage = true
     override var lang = "tr"
-    override val hasSearch = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
     private val commonHeaders = mapOf(
@@ -28,7 +27,11 @@ class TrAnimeIzleProvider : MainAPI() {
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
     )
 
-    override suspend fun init() {
+    private var isInitialized = false
+
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
         try {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
@@ -50,6 +53,7 @@ class TrAnimeIzleProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val doc = app.get("${request.data}$page", headers = commonHeaders).document
         val items = doc.select("div.anime-card, li.anime-item, div.movie-item")
             .mapNotNull { it.toSearchResult() }
@@ -57,6 +61,7 @@ class TrAnimeIzleProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val doc = app.get(
             "$mainUrl/arama?q=${query.encodeUrl()}",
             headers = commonHeaders
@@ -65,6 +70,7 @@ class TrAnimeIzleProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val doc = app.get(url, headers = commonHeaders).document
 
         val title = doc.selectFirst("h1.anime-title, div.baslik h1, h1.entry-title")
@@ -106,6 +112,7 @@ class TrAnimeIzleProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         val doc = app.get(data, headers = commonHeaders).document
 
         // iframe embed'ler

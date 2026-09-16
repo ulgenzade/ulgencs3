@@ -17,7 +17,6 @@ class AnimeCixProvider : MainAPI() {
     override var name = "AnimeCiX"
     override val hasMainPage = true
     override var lang = "tr"
-    override val hasSearch = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
     private val apiUrl = "$mainUrl/api/v1"
@@ -32,8 +31,11 @@ class AnimeCixProvider : MainAPI() {
 
     // XSRF token — ilk istekten cookie'den alınır
     private var xsrfToken: String? = null
+    private var isInitialized = false
 
-    override suspend fun init() {
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
         try {
             // domains.json'dan güncel domain çek
             val config = app.get(
@@ -68,6 +70,7 @@ class AnimeCixProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val resp = app.get(
             "$apiUrl/titles?type=${request.data}&page=$page&perPage=20",
             headers = authHeaders()
@@ -85,6 +88,7 @@ class AnimeCixProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val resp = app.get(
             "$apiUrl/search?query=${query.encodeUrl()}&type=anime",
             headers = authHeaders()
@@ -99,6 +103,7 @@ class AnimeCixProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val id = url.substringAfterLast("/")
         val resp = app.get("$apiUrl/titles/$id", headers = authHeaders())
         val item = resp.parsedSafe<ApiItem>()
@@ -146,6 +151,7 @@ class AnimeCixProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         // URL'den id, season, episode bilgisi çıkar
         val regex = Regex("""/titles/(\d+)(?:/s(\d+)/e(\d+))?""")
         val match = regex.find(data) ?: return false
@@ -161,7 +167,7 @@ class AnimeCixProvider : MainAPI() {
         streams.streams?.forEach { stream ->
             val url = stream.url ?: return@forEach
             val quality = when {
-                url.contains("2160") || url.contains("4k", ignoreCase = true) -> Qualities.UHD_4K.value
+                url.contains("2160") || url.contains("4k", ignoreCase = true) -> Qualities.P2160.value
                 url.contains("1080") -> Qualities.P1080.value
                 url.contains("720") -> Qualities.P720.value
                 url.contains("480") -> Qualities.P480.value
@@ -210,13 +216,13 @@ class AnimeCixProvider : MainAPI() {
         val genres: List<Genre>? = null,
         val seasons: List<Season>? = null,
         val type: String? = null
-    ) {
-        fun toSearchResponse(): SearchResponse? {
-            val t = name ?: title ?: return null
-            val url = "https://animecix.tv/titles/${id ?: return null}"
-            return newAnimeSearchResponse(t, url, TvType.Anime) {
-                this.posterUrl = poster ?: image
-            }
+    )
+
+    private fun ApiItem.toSearchResponse(): SearchResponse? {
+        val t = name ?: title ?: return null
+        val url = "https://animecix.tv/titles/${id ?: return null}"
+        return newAnimeSearchResponse(t, url, TvType.Anime) {
+            this.posterUrl = poster ?: image
         }
     }
 

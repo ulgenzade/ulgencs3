@@ -20,7 +20,6 @@ class TurkAnimeProvider : MainAPI() {
     override var name = "Türk Anime TV"
     override val hasMainPage = true
     override var lang = "tr"
-    override val hasSearch = true
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
@@ -35,8 +34,12 @@ class TurkAnimeProvider : MainAPI() {
         "Referer" to mainUrl
     )
 
+    private var isInitialized = false
+
     /** domains.json'dan güncel domaini çek, başarısızsa fallback kullan */
-    override suspend fun init() {
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
         try {
             val configText = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
@@ -62,6 +65,7 @@ class TurkAnimeProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         // Bu endpoint'ler sayfalama desteklemiyor; sadece ilk sayfada çek
         if (page > 1) return newHomePageResponse(emptyList())
 
@@ -80,6 +84,7 @@ class TurkAnimeProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val doc = app.post(
             "$mainUrl/arama",
             headers = commonHeaders,
@@ -96,6 +101,7 @@ class TurkAnimeProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val doc = app.get(url, headers = commonHeaders).document
 
         val title = doc.selectFirst("h2.panel-title, div.anime-baslik")
@@ -144,6 +150,7 @@ class TurkAnimeProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         val doc = app.get(data, headers = commonHeaders).document
 
         // Sayfadaki tüm iframe / video embed kaynaklarını bul

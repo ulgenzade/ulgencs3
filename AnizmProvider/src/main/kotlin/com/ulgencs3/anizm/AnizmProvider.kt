@@ -18,7 +18,6 @@ class AnizmProvider : MainAPI() {
     override var name = "Anizm"
     override val hasMainPage = true
     override var lang = "tr"
-    override val hasSearch = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
     private val commonHeaders = mapOf(
@@ -28,7 +27,11 @@ class AnizmProvider : MainAPI() {
         "Accept-Language" to "tr-TR,tr;q=0.9,en;q=0.8"
     )
 
-    override suspend fun init() {
+    private var isInitialized = false
+
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
         try {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
@@ -47,12 +50,14 @@ class AnizmProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val doc = app.get("${request.data}$page", headers = commonHeaders).document
         val items = doc.select("div.animeCard, li.listItem").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val doc = app.get(
             "$mainUrl/arama/?q=${query.encodeUrl()}",
             headers = commonHeaders
@@ -61,6 +66,7 @@ class AnizmProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val doc = app.get(url, headers = commonHeaders).document
 
         val title = doc.selectFirst("h1.animeTitle, h2.animeName")?.text()?.trim()
@@ -96,6 +102,7 @@ class AnizmProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         val doc = app.get(data, headers = commonHeaders).document
 
         // iframe embed'leri
