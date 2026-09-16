@@ -231,7 +231,7 @@ class TurkAnimeProvider : MainAPI() {
                     // 2. Default iframe
                     val defaultIframe = subDoc.selectFirst("iframe")?.attr("src")
                     if (!defaultIframe.isNullOrBlank() && !defaultIframe.contains("a-ads.com")) {
-                        resolveAndLoadPlayer(defaultIframe, fansubName, "Varsayılan", fullSubLink, subtitleCallback, callback)
+                        resolveAndLoadPlayer(defaultIframe, fullSubLink, subtitleCallback, callback)
                     }
 
                     // 3. Bu fansuba ait alternatif medya oynatıcı butonları (SIBNET, OK.RU, DOOD vb.)
@@ -243,7 +243,6 @@ class TurkAnimeProvider : MainAPI() {
                         val pFullLink = fixUrlNull(pEndpoint) ?: continue
                         if (!visitedLinks.add(pFullLink)) continue
 
-                        val playerName = pBtn.ownText().trim().ifBlank { "Player" }
                         try {
                             val pResp = app.get(
                                 pFullLink,
@@ -257,7 +256,7 @@ class TurkAnimeProvider : MainAPI() {
                             val pDoc = Jsoup.parse(pResp.text, pFullLink)
                             val pIframe = pDoc.selectFirst("iframe")?.attr("src")
                             if (!pIframe.isNullOrBlank() && !pIframe.contains("a-ads.com")) {
-                                resolveAndLoadPlayer(pIframe, fansubName, playerName, pFullLink, subtitleCallback, callback)
+                                resolveAndLoadPlayer(pIframe, pFullLink, subtitleCallback, callback)
                             }
                         } catch (_: Exception) { }
                     }
@@ -268,7 +267,7 @@ class TurkAnimeProvider : MainAPI() {
             for (iframe in doc.select("iframe[src]")) {
                 val src = fixUrlNull(iframe.attr("src")) ?: continue
                 if (!src.contains("a-ads.com")) {
-                    resolveAndLoadPlayer(src, "Türk Anime", "Player", data, subtitleCallback, callback)
+                    resolveAndLoadPlayer(src, data, subtitleCallback, callback)
                 }
             }
         }
@@ -278,8 +277,6 @@ class TurkAnimeProvider : MainAPI() {
 
     private suspend fun resolveAndLoadPlayer(
         iframeSrc: String,
-        fansubName: String,
-        playerName: String,
         referer: String,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
@@ -293,20 +290,9 @@ class TurkAnimeProvider : MainAPI() {
         loadExtractor(
             url = targetUrl,
             referer = referer,
-            subtitleCallback = subtitleCallback
-        ) { link ->
-            callback(
-                newExtractorLink(
-                    source = "$name ($fansubName)",
-                    name = "$name [$fansubName - $playerName] ${link.name}",
-                    url = link.url,
-                    type = link.type
-                ) {
-                    this.quality = link.quality
-                    this.headers = link.headers
-                }
-            )
-        }
+            subtitleCallback = subtitleCallback,
+            callback = callback
+        )
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
