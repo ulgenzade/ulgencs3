@@ -1,5 +1,6 @@
 package com.ulgencs3.animecix
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -36,10 +37,12 @@ open class TauVideo : ExtractorApi() {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class TauVideoUrls(
         @JsonProperty("urls") val urls: List<TauVideoData> = emptyList()
     )
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     data class TauVideoData(
         @JsonProperty("url") val url: String = "",
         @JsonProperty("label") val label: String = ""
