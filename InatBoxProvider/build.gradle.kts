@@ -1,28 +1,13 @@
-plugins {
-    id("com.android.library")
-    id("kotlin-android")
-}
+import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 
-android {
-    namespace = "com.ulgencs3.inatbox"
-    compileSdk = 35
+fun Project.cloudstream(configuration: CloudstreamExtension.() -> Unit) = extensions.getByName<CloudstreamExtension>("cloudstream").configuration()
 
-    defaultConfig {
-        minSdk = 21
-    }
+version = 1
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs = listOf("-Xno-param-assertions", "-Xno-call-assertions")
-    }
-}
-
-dependencies {
-    implementation("com.lagradost:cloudstream3:pre-release")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.18.1")
+cloudstream {
+    authors = listOf("ulgenzade")
+    language = "tr"
+    description = "InatBox - Canlı TV ve Dizi Yayınları"
+    status = 1
+    tvTypes = listOf("Live")
 }
