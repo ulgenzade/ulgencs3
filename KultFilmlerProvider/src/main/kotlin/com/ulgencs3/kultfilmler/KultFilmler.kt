@@ -62,30 +62,30 @@ class KultFilmler : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/category/aile-filmleri-izle"		    to "Aile",
-        "${mainUrl}/category/aksiyon-filmleri-izle"	        to "Aksiyon",
-        "${mainUrl}/category/animasyon-filmleri-izle"	    to "Animasyon",
-        "${mainUrl}/category/belgesel-izle"			        to "Belgesel",
-        "${mainUrl}/category/bilim-kurgu-filmleri-izle"     to "Bilim Kurgu",
-        "${mainUrl}/category/biyografi-filmleri-izle"	    to "Biyografi",
-        "${mainUrl}/category/dram-filmleri-izle"		    to "Dram",
-        "${mainUrl}/category/fantastik-filmleri-izle"	    to "Fantastik",
-        "${mainUrl}/category/gerilim-filmleri-izle"	        to "Gerilim",
-        "${mainUrl}/category/gizem-filmleri-izle"		    to "Gizem",
-        "${mainUrl}/category/kara-filmleri-izle"		    to "Kara",
-        "${mainUrl}/category/kisa-film-izle"			    to "Kısa Metrajlı",
-        "${mainUrl}/category/komedi-filmleri-izle"		    to "Komedi",
-        "${mainUrl}/category/korku-filmleri-izle"		    to "Korku",
-        "${mainUrl}/category/macera-filmleri-izle"		    to "Macera",
-        "${mainUrl}/category/muzik-filmleri-izle"		    to "Müzik",
-        "${mainUrl}/category/polisiye-filmleri-izle"	    to "Polisiye",
-        "${mainUrl}/category/politik-filmleri-izle"	        to "Politik",
-        "${mainUrl}/category/romantik-filmleri-izle"	    to "Romantik",
-        "${mainUrl}/category/savas-filmleri-izle"		    to "Savaş",
-        "${mainUrl}/category/spor-filmleri-izle"		    to "Spor",
-        "${mainUrl}/category/suc-filmleri-izle"		        to "Suç",
-        "${mainUrl}/category/tarih-filmleri-izle"		    to "Tarih",
-        "${mainUrl}/category/yerli-filmleri-izle"		    to "Yerli"
+        "category/aile-filmleri-izle"		    to "Aile",
+        "category/aksiyon-filmleri-izle"	        to "Aksiyon",
+        "category/animasyon-filmleri-izle"	    to "Animasyon",
+        "category/belgesel-izle"			        to "Belgesel",
+        "category/bilim-kurgu-filmleri-izle"     to "Bilim Kurgu",
+        "category/biyografi-filmleri-izle"	    to "Biyografi",
+        "category/dram-filmleri-izle"		    to "Dram",
+        "category/fantastik-filmleri-izle"	    to "Fantastik",
+        "category/gerilim-filmleri-izle"	        to "Gerilim",
+        "category/gizem-filmleri-izle"		    to "Gizem",
+        "category/kara-filmleri-izle"		    to "Kara",
+        "category/kisa-film-izle"			    to "Kısa Metrajlı",
+        "category/komedi-filmleri-izle"		    to "Komedi",
+        "category/korku-filmleri-izle"		    to "Korku",
+        "category/macera-filmleri-izle"		    to "Macera",
+        "category/muzik-filmleri-izle"		    to "Müzik",
+        "category/polisiye-filmleri-izle"	    to "Polisiye",
+        "category/politik-filmleri-izle"	        to "Politik",
+        "category/romantik-filmleri-izle"	    to "Romantik",
+        "category/savas-filmleri-izle"		    to "Savaş",
+        "category/spor-filmleri-izle"		    to "Spor",
+        "category/suc-filmleri-izle"		        to "Suç",
+        "category/tarih-filmleri-izle"		    to "Tarih",
+        "category/yerli-filmleri-izle"		    to "Yerli"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -122,7 +122,7 @@ class KultFilmler : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("${mainUrl}/?s=${query}").document
+        val document = app.get("?s=${query}").document
         return document.select("a.mcard").mapNotNull { it.toSearchResult() }
     }
 

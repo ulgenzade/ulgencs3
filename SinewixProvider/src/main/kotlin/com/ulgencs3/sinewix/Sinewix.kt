@@ -63,7 +63,7 @@ class Sinewix : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val response = app.get("${request.data}?page=$page", headers = sineHeaders).text
+        val response = app.get("${if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"}?page=$page", headers = sineHeaders).text
         
         val items = if (request.name == "Yeni Bölümler") {
             parseJson<SineWixYeniBolumResponse>(response).data?.mapNotNull { it.toSearchResponse() }

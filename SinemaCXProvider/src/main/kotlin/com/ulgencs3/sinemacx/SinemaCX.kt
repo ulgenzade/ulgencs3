@@ -40,25 +40,26 @@ class SinemaCX : MainAPI() {
 	*/
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/page/"			                     to		"Son Eklenen Filmler",
-        "${mainUrl}/izle/aile-filmleri/page/"			 to		"Aile Filmleri",
-        "${mainUrl}/izle/aksiyon-filmleri/page/"		 to		"Aksiyon Filmleri",
-        "${mainUrl}/izle/animasyon-filmleri/page/"		 to		"Animasyon Filmleri",
-        "${mainUrl}/izle/belgesel/page/"				 to		"Belgesel Filmleri",
-        "${mainUrl}/izle/bilim-kurgu-filmleri/page/"	 to		"Bilim Kurgu Filmler",
-        "${mainUrl}/izle/biyografi/page/"				 to		"Biyografi Filmleri",
-        "${mainUrl}/izle/fantastik-filmler/page/"		 to		"Fantastik Filmler",
-        "${mainUrl}/izle/gizem-filmleri/page/"			 to		"Gizem Filmleri",
-        "${mainUrl}/izle/komedi-filmleri/page/"			 to		"Komedi Filmleri",
-        "${mainUrl}/izle/korku-filmleri/page/"			 to		"Korku Filmleri",
-        "${mainUrl}/izle/macera-filmleri/page/"			 to		"Macera Filmleri",
-        "${mainUrl}/izle/romantik-filmler/page/"		 to		"Romantik Filmler",
-        "${mainUrl}/izle/erotik-filmler/page/"			 to		"Erotik Film izle",
+        "page/"			                     to		"Son Eklenen Filmler",
+        "izle/aile-filmleri/page/"			 to		"Aile Filmleri",
+        "izle/aksiyon-filmleri/page/"		 to		"Aksiyon Filmleri",
+        "izle/animasyon-filmleri/page/"		 to		"Animasyon Filmleri",
+        "izle/belgesel/page/"				 to		"Belgesel Filmleri",
+        "izle/bilim-kurgu-filmleri/page/"	 to		"Bilim Kurgu Filmler",
+        "izle/biyografi/page/"				 to		"Biyografi Filmleri",
+        "izle/fantastik-filmler/page/"		 to		"Fantastik Filmler",
+        "izle/gizem-filmleri/page/"			 to		"Gizem Filmleri",
+        "izle/komedi-filmleri/page/"			 to		"Komedi Filmleri",
+        "izle/korku-filmleri/page/"			 to		"Korku Filmleri",
+        "izle/macera-filmleri/page/"			 to		"Macera Filmleri",
+        "izle/romantik-filmler/page/"		 to		"Romantik Filmler",
+        "izle/erotik-filmler/page/"			 to		"Erotik Film izle",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val document = app.get("${request.data}${page}").document
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val document = app.get("${pageUrl}${page}").document
         val home     = document.select("div.son div.frag-k, div.icerik div.frag-k").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(request.name, home)
@@ -74,7 +75,7 @@ class SinemaCX : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("${mainUrl}/?s=${query}").document
+        val document = app.get("?s=${query}").document
 
         return document.select("div.icerik div.frag-k").mapNotNull { it.toSearchResult() }
     }

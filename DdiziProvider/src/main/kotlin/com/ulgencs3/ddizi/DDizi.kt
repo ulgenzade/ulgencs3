@@ -46,7 +46,8 @@ class DDizi : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val url = if (page > 1) "${request.data}/$page" else request.data
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val url = if (page > 1) "${pageUrl}/$page" else request.data
         val document = app.get(url, headers = getHeaders(mainUrl)).document
     
         val home = when (request.name) {

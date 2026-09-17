@@ -91,20 +91,20 @@ class RecTV : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/api/channel/by/filtres/0/0/SAYFA/${swKey}/"      to "Canlı",
-        "${mainUrl}/api/movie/by/filtres/0/created/SAYFA/${swKey}/"  to "Son Filmler",
-        "${mainUrl}/api/serie/by/filtres/0/created/SAYFA/${swKey}/"  to "Son Diziler",
-        "${mainUrl}/api/movie/by/filtres/14/created/SAYFA/${swKey}/" to "Aile",
-        "${mainUrl}/api/movie/by/filtres/1/created/SAYFA/${swKey}/"  to "Aksiyon",
-        "${mainUrl}/api/movie/by/filtres/13/created/SAYFA/${swKey}/" to "Animasyon",
-        "${mainUrl}/api/movie/by/filtres/19/created/SAYFA/${swKey}/" to "Belgesel",
-        "${mainUrl}/api/movie/by/filtres/4/created/SAYFA/${swKey}/"  to "Bilim Kurgu",
-        "${mainUrl}/api/movie/by/filtres/2/created/SAYFA/${swKey}/"  to "Dram",
-        "${mainUrl}/api/movie/by/filtres/10/created/SAYFA/${swKey}/" to "Fantastik",
-        "${mainUrl}/api/movie/by/filtres/3/created/SAYFA/${swKey}/"  to "Komedi",
-        "${mainUrl}/api/movie/by/filtres/8/created/SAYFA/${swKey}/"  to "Korku",
-        "${mainUrl}/api/movie/by/filtres/17/created/SAYFA/${swKey}/" to "Macera",
-        "${mainUrl}/api/movie/by/filtres/5/created/SAYFA/${swKey}/"  to "Romantik"
+        "api/channel/by/filtres/0/0/SAYFA/${swKey}/"      to "Canlı",
+        "api/movie/by/filtres/0/created/SAYFA/${swKey}/"  to "Son Filmler",
+        "api/serie/by/filtres/0/created/SAYFA/${swKey}/"  to "Son Diziler",
+        "api/movie/by/filtres/14/created/SAYFA/${swKey}/" to "Aile",
+        "api/movie/by/filtres/1/created/SAYFA/${swKey}/"  to "Aksiyon",
+        "api/movie/by/filtres/13/created/SAYFA/${swKey}/" to "Animasyon",
+        "api/movie/by/filtres/19/created/SAYFA/${swKey}/" to "Belgesel",
+        "api/movie/by/filtres/4/created/SAYFA/${swKey}/"  to "Bilim Kurgu",
+        "api/movie/by/filtres/2/created/SAYFA/${swKey}/"  to "Dram",
+        "api/movie/by/filtres/10/created/SAYFA/${swKey}/" to "Fantastik",
+        "api/movie/by/filtres/3/created/SAYFA/${swKey}/"  to "Komedi",
+        "api/movie/by/filtres/8/created/SAYFA/${swKey}/"  to "Korku",
+        "api/movie/by/filtres/17/created/SAYFA/${swKey}/" to "Macera",
+        "api/movie/by/filtres/5/created/SAYFA/${swKey}/"  to "Romantik"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

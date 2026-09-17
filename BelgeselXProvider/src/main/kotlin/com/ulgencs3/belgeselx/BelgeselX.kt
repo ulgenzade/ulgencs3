@@ -32,25 +32,25 @@ class BelgeselX : MainAPI() {
     override val supportedTypes       = setOf(TvType.Documentary)
 	
     override val mainPage = mainPageOf(
-        "${mainUrl}/konu/turk-tarihi-belgeselleri" to "Türk Tarihi",
-        "${mainUrl}/konu/tarih-belgeselleri"	   to "Tarih",
-        "${mainUrl}/konu/seyehat-belgeselleri"	   to "Seyahat",
-        "${mainUrl}/konu/seri-belgeseller"		   to "Seri",
-        "${mainUrl}/konu/savas-belgeselleri"	   to "Savaş",
-        "${mainUrl}/konu/sanat-belgeselleri"	   to "Sanat",
-        "${mainUrl}/konu/psikoloji-belgeselleri"   to "Psikoloji",
-        "${mainUrl}/konu/polisiye-belgeselleri"	   to "Polisiye",
-        "${mainUrl}/konu/otomobil-belgeselleri"	   to "Otomobil",
-        "${mainUrl}/konu/nazi-belgeselleri"		   to "Nazi",
-        "${mainUrl}/konu/muhendislik-belgeselleri" to "Mühendislik",
-        "${mainUrl}/konu/kultur-din-belgeselleri"  to "Kültür Din",
-        "${mainUrl}/konu/kozmik-belgeseller"	   to "Kozmik",
-        "${mainUrl}/konu/hayvan-belgeselleri"	   to "Hayvan",
-        "${mainUrl}/konu/eski-tarih-belgeselleri"  to "Eski Tarih",
-        "${mainUrl}/konu/egitim-belgeselleri"	   to "Eğitim",
-        "${mainUrl}/konu/dunya-belgeselleri"	   to "Dünya",
-        "${mainUrl}/konu/doga-belgeselleri"		   to "Doğa",
-        "${mainUrl}/konu/bilim-belgeselleri"	   to "Bilim"
+        "konu/turk-tarihi-belgeselleri" to "Türk Tarihi",
+        "konu/tarih-belgeselleri"	   to "Tarih",
+        "konu/seyehat-belgeselleri"	   to "Seyahat",
+        "konu/seri-belgeseller"		   to "Seri",
+        "konu/savas-belgeselleri"	   to "Savaş",
+        "konu/sanat-belgeselleri"	   to "Sanat",
+        "konu/psikoloji-belgeselleri"   to "Psikoloji",
+        "konu/polisiye-belgeselleri"	   to "Polisiye",
+        "konu/otomobil-belgeselleri"	   to "Otomobil",
+        "konu/nazi-belgeselleri"		   to "Nazi",
+        "konu/muhendislik-belgeselleri" to "Mühendislik",
+        "konu/kultur-din-belgeselleri"  to "Kültür Din",
+        "konu/kozmik-belgeseller"	   to "Kozmik",
+        "konu/hayvan-belgeselleri"	   to "Hayvan",
+        "konu/eski-tarih-belgeselleri"  to "Eski Tarih",
+        "konu/egitim-belgeselleri"	   to "Eğitim",
+        "konu/dunya-belgeselleri"	   to "Dünya",
+        "konu/doga-belgeselleri"		   to "Doğa",
+        "konu/bilim-belgeselleri"	   to "Bilim"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

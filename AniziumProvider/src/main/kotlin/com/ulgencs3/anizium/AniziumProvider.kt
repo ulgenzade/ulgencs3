@@ -93,6 +93,7 @@ class AniziumProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val items = mutableListOf<SearchResponse>()
 
         if (request.data == "last-added") {

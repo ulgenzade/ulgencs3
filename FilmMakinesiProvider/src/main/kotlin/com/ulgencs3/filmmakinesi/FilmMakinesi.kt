@@ -32,18 +32,19 @@ class FilmMakinesi : MainAPI() {
     override val hasQuickSearch = false
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override val mainPage = mainPageOf(
-        "${mainUrl}/filmler-1/" to "Son Filmler",
-        "${mainUrl}/yabanci-dizi-izle-1/" to "Son Diziler",
-        "${mainUrl}/tur/aksiyon-fm1/film/" to "Aksiyon",
-        "${mainUrl}/tur/korku-fm2/film/" to "Korku",
-        "${mainUrl}/tur/bilim-kurgu-fm3/film/" to "Bilim Kurgu",
-        "${mainUrl}/tur/komedi-fm1/film/" to "Komedi",
-        "${mainUrl}/tur/gerilim-fm1/film/" to "Gerilim",
-        "${mainUrl}/tur/macera-fm1/film/" to "Macera",
-        "${mainUrl}/tur/fantastik-fm1/film/" to "Fantastik"
+        "filmler-1/" to "Son Filmler",
+        "yabanci-dizi-izle-1/" to "Son Diziler",
+        "tur/aksiyon-fm1/film/" to "Aksiyon",
+        "tur/korku-fm2/film/" to "Korku",
+        "tur/bilim-kurgu-fm3/film/" to "Bilim Kurgu",
+        "tur/komedi-fm1/film/" to "Komedi",
+        "tur/gerilim-fm1/film/" to "Gerilim",
+        "tur/macera-fm1/film/" to "Macera",
+        "tur/fantastik-fm1/film/" to "Fantastik"
     )
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val url = if (page == 1) request.data else "${request.data.removeSuffix("/")}/sayfa/$page/"
         val document = app.get(url).document
         val items = document.select("a.item")
@@ -53,7 +54,7 @@ class FilmMakinesi : MainAPI() {
     }
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("${mainUrl}/arama/?s=${query}").document
+        val document = app.get("arama/?s=${query}").document
         return document.select("a.item").mapNotNull { it.toSearchResult() }
     }
     private fun Element.toSearchResult(): SearchResponse? {

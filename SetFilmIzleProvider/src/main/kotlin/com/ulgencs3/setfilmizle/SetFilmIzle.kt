@@ -36,35 +36,36 @@ class SetFilmIzle : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie, TvType.TvSeries)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/tur/aile/"        to "Aile",
-        "${mainUrl}/tur/aksiyon/"     to "Aksiyon",
-        "${mainUrl}/tur/animasyon/"   to "Animasyon",
-        "${mainUrl}/tur/belgesel/"    to "Belgesel",
-        "${mainUrl}/tur/bilim-kurgu/" to "Bilim-Kurgu",
-        "${mainUrl}/tur/biyografi/"   to "Biyografi",
-        "${mainUrl}/tur/dini/"        to "Dini",
-        "${mainUrl}/tur/dram/"        to "Dram",
-        "${mainUrl}/tur/fantastik/"   to "Fantastik",
-        "${mainUrl}/tur/genclik/"     to "Gençlik",
-        "${mainUrl}/tur/gerilim/"     to "Gerilim",
-        "${mainUrl}/tur/gizem/"       to "Gizem",
-        "${mainUrl}/tur/komedi/"      to "Komedi",
-        "${mainUrl}/tur/korku/"       to "Korku",
-        "${mainUrl}/tur/macera/"      to "Macera",
-        "${mainUrl}/tur/mini-dizi/"   to "Mini Dizi",
-        "${mainUrl}/tur/muzik/"       to "Müzik",
-        "${mainUrl}/tur/program/"     to "Program",
-        "${mainUrl}/tur/romantik/"    to "Romantik",
-        "${mainUrl}/tur/savas/"       to "Savaş",
-        "${mainUrl}/tur/spor/"        to "Spor",
-        "${mainUrl}/tur/suc/"         to "Suç",
-        "${mainUrl}/tur/tarih/"       to "Tarih",
-        "${mainUrl}/tur/western/"     to "Western"
+        "tur/aile/"        to "Aile",
+        "tur/aksiyon/"     to "Aksiyon",
+        "tur/animasyon/"   to "Animasyon",
+        "tur/belgesel/"    to "Belgesel",
+        "tur/bilim-kurgu/" to "Bilim-Kurgu",
+        "tur/biyografi/"   to "Biyografi",
+        "tur/dini/"        to "Dini",
+        "tur/dram/"        to "Dram",
+        "tur/fantastik/"   to "Fantastik",
+        "tur/genclik/"     to "Gençlik",
+        "tur/gerilim/"     to "Gerilim",
+        "tur/gizem/"       to "Gizem",
+        "tur/komedi/"      to "Komedi",
+        "tur/korku/"       to "Korku",
+        "tur/macera/"      to "Macera",
+        "tur/mini-dizi/"   to "Mini Dizi",
+        "tur/muzik/"       to "Müzik",
+        "tur/program/"     to "Program",
+        "tur/romantik/"    to "Romantik",
+        "tur/savas/"       to "Savaş",
+        "tur/spor/"        to "Spor",
+        "tur/suc/"         to "Suç",
+        "tur/tarih/"       to "Tarih",
+        "tur/western/"     to "Western"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val document = app.get(request.data).document
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val document = app.get(pageUrl).document
         val home     = document.select("div.items article").mapNotNull { it.toMainPageResult() }
 
         return newHomePageResponse(request.name, home)
@@ -87,7 +88,7 @@ class SetFilmIzle : MainAPI() {
         val mainPage = app.get(mainUrl).document
         val nonce    = Regex("""nonce: '(.*)'""").find(mainPage.html())?.groupValues?.get(1) ?: ""
         val search   = app.post(
-            url     = "${mainUrl}/wp-admin/admin-ajax.php",
+            url     = "wp-admin/admin-ajax.php",
             headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
             data    = mapOf(
                 "action" to "ajax_search",
@@ -207,7 +208,7 @@ class SetFilmIzle : MainAPI() {
             "X-Requested-With" to "XMLHttpRequest"
         )
 
-        val request = Request.Builder().url("${mainUrl}/wp-admin/admin-ajax.php").post(requestBody).apply {
+        val request = Request.Builder().url("wp-admin/admin-ajax.php").post(requestBody).apply {
             headers.forEach { (key, value) -> addHeader(key, value) }
         }.build()
 

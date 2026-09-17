@@ -108,6 +108,7 @@ class SelcukFlix : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val data  = request.data
         val items = mutableListOf<SearchResponse>()
 

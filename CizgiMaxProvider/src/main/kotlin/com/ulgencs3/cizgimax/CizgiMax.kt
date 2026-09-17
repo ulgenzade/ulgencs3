@@ -32,9 +32,9 @@ class CizgiMax : MainAPI() {
     override val supportedTypes       = setOf(TvType.Cartoon, TvType.Anime, TvType.Movie)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/diziler/cizgi-film/" to "Çizgi Filmler",
-        "${mainUrl}/diziler/dizi/"       to "Diziler",
-        "${mainUrl}/diziler/anime/"      to "Animeler"
+        "diziler/cizgi-film/" to "Çizgi Filmler",
+        "diziler/dizi/"       to "Diziler",
+        "diziler/anime/"      to "Animeler"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -72,7 +72,7 @@ class CizgiMax : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("${mainUrl}/ara/?q=${query}").document
+        val document = app.get("ara/?q=${query}").document
         return document.select("div.film-list div.film-item").mapNotNull { it.toSearchResult() }
     }
 

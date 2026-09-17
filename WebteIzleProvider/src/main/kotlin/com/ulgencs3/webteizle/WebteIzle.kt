@@ -83,26 +83,26 @@ class WebteIzle : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/film-izle/"                   to "Güncel",
-        "${mainUrl}/yeni-filmler/"                to "Yeni",
-        "${mainUrl}/tavsiye-filmler/"             to "Tavsiye",
-        "${mainUrl}/filtre/SAYFA?tur=Aile"        to "Aile",
-        "${mainUrl}/filtre/SAYFA?tur=Aksiyon"     to "Aksiyon",
-        "${mainUrl}/filtre/SAYFA?tur=Animasyon"   to "Animasyon",
-        "${mainUrl}/filtre/SAYFA?tur=Belgesel"    to "Belgesel",
-        "${mainUrl}/filtre/SAYFA?tur=Bilim-Kurgu" to "Bilim Kurgu",
-        "${mainUrl}/filtre/SAYFA?tur=Biyografi"   to "Biyografi",
-        "${mainUrl}/filtre/SAYFA?tur=Dram"        to "Dram",
-        "${mainUrl}/filtre/SAYFA?tur=Fantastik"   to "Fantastik",
-        "${mainUrl}/filtre/SAYFA?tur=Gerilim"     to "Gerilim",
-        "${mainUrl}/filtre/SAYFA?tur=Gizem"       to "Gizem",
-        "${mainUrl}/filtre/SAYFA?tur=Komedi"      to "Komedi",
-        "${mainUrl}/filtre/SAYFA?tur=Korku"       to "Korku",
-        "${mainUrl}/filtre/SAYFA?tur=Macera"      to "Macera",
-        "${mainUrl}/filtre/SAYFA?tur=Romantik"    to "Romantik",
-        "${mainUrl}/filtre/SAYFA?tur=Spor"        to "Spor",
-        "${mainUrl}/filtre/SAYFA?tur=Tarihi"      to "Tarihi",
-        "${mainUrl}/filtre/SAYFA?tur=Western"     to "Western"
+        "film-izle/"                   to "Güncel",
+        "yeni-filmler/"                to "Yeni",
+        "tavsiye-filmler/"             to "Tavsiye",
+        "filtre/SAYFA?tur=Aile"        to "Aile",
+        "filtre/SAYFA?tur=Aksiyon"     to "Aksiyon",
+        "filtre/SAYFA?tur=Animasyon"   to "Animasyon",
+        "filtre/SAYFA?tur=Belgesel"    to "Belgesel",
+        "filtre/SAYFA?tur=Bilim-Kurgu" to "Bilim Kurgu",
+        "filtre/SAYFA?tur=Biyografi"   to "Biyografi",
+        "filtre/SAYFA?tur=Dram"        to "Dram",
+        "filtre/SAYFA?tur=Fantastik"   to "Fantastik",
+        "filtre/SAYFA?tur=Gerilim"     to "Gerilim",
+        "filtre/SAYFA?tur=Gizem"       to "Gizem",
+        "filtre/SAYFA?tur=Komedi"      to "Komedi",
+        "filtre/SAYFA?tur=Korku"       to "Korku",
+        "filtre/SAYFA?tur=Macera"      to "Macera",
+        "filtre/SAYFA?tur=Romantik"    to "Romantik",
+        "filtre/SAYFA?tur=Spor"        to "Spor",
+        "filtre/SAYFA?tur=Tarihi"      to "Tarihi",
+        "filtre/SAYFA?tur=Western"     to "Western"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -128,7 +128,7 @@ class WebteIzle : MainAPI() {
         val query = URLEncoder.encode(query, "ISO-8859-9")
 
         val document = app.get(
-            "${mainUrl}/filtre?a=${query}",
+            "filtre?a=${query}",
             referer = "${mainUrl}/",
             interceptor = interceptor
         ).document
@@ -191,7 +191,7 @@ class WebteIzle : MainAPI() {
             val dilAd = if (it == "0") "Dublaj" else "Altyazı"
 
             val playerApi = app.post(
-                "${mainUrl}/ajax/dataAlternatif3.asp",
+                "ajax/dataAlternatif3.asp",
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                 data = mapOf(
                     "filmid" to filmId,
@@ -205,7 +205,7 @@ class WebteIzle : MainAPI() {
 
             for (thisEmbed in playerData.data) {
                 val embedApi = app.post(
-                    "${mainUrl}/ajax/dataEmbed.asp",
+                    "ajax/dataEmbed.asp",
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                     data = mapOf("id" to thisEmbed.id.toString())
                 ).document

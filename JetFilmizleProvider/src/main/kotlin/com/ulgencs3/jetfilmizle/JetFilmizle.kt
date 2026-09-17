@@ -34,11 +34,11 @@ class JetFilmizle : MainAPI() {
 
     override val mainPage = mainPageOf(
         mainUrl to "Son Filmler",
-        "${mainUrl}/saglayici/netflix"        to "Netflix",
-        "${mainUrl}/gunun-kesleri"            to "Editörün Seçimi",
-        "${mainUrl}/yerli-filmler"            to "Türk Filmleri",
-        "${mainUrl}/diziler"                  to "Diziler",
-        "${mainUrl}/nette-ilkler"             to "Nette İlk Filmler"
+        "saglayici/netflix"        to "Netflix",
+        "gunun-kesleri"            to "Editörün Seçimi",
+        "yerli-filmler"            to "Türk Filmleri",
+        "diziler"                  to "Diziler",
+        "nette-ilkler"             to "Nette İlk Filmler"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -84,7 +84,7 @@ class JetFilmizle : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
         val document = app.post(
-            "${mainUrl}/arama?q=",
+            "arama?q=",
             referer = "${mainUrl}/",
             data    = mapOf("s" to query)
         ).document

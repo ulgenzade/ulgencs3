@@ -58,19 +58,20 @@ class DiziMom : MainAPI() {
     }
     
     override val mainPage = mainPageOf(
-        "${mainUrl}/tum-bolumler/page/"        to "Son Bölümler",
-        "${mainUrl}/yerli-dizi-izle/page/"     to "Yerli Diziler",
-        "${mainUrl}/yabanci-dizi-izle/page/"   to "Yabancı Diziler",
-        "${mainUrl}/tv-programlari-izle/page/" to "TV Programları",
-        "${mainUrl}/netflix-dizileri-izle/page/"      to "Netflix Dizileri",
-        // "${mainUrl}/turkce-dublaj-diziler/page/"      to "Dublajlı Diziler",   // ! "Son Bölümler" Ana sayfa yüklenmesini yavaşlattığı için bunlar devre dışı bırakılmıştır..
-        // "${mainUrl}/kore-dizileri-izle/page/"         to "Kore Dizileri",
-        // "${mainUrl}/full-hd-hint-dizileri-izle/page/" to "Hint Dizileri",
+        "tum-bolumler/page/"        to "Son Bölümler",
+        "yerli-dizi-izle/page/"     to "Yerli Diziler",
+        "yabanci-dizi-izle/page/"   to "Yabancı Diziler",
+        "tv-programlari-izle/page/" to "TV Programları",
+        "netflix-dizileri-izle/page/"      to "Netflix Dizileri",
+        // "turkce-dublaj-diziler/page/"      to "Dublajlı Diziler",   // ! "Son Bölümler" Ana sayfa yüklenmesini yavaşlattığı için bunlar devre dışı bırakılmıştır..
+        // "kore-dizileri-izle/page/"         to "Kore Dizileri",
+        // "full-hd-hint-dizileri-izle/page/" to "Hint Dizileri",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val document = app.get("${request.data}${page}/", interceptor = interceptor).document
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val document = app.get("${pageUrl}${page}/", interceptor = interceptor).document
         val home     = if (request.data.contains("/tum-bolumler/")) {
             document.select("div.episode-box").mapNotNull { it.sonBolumler() } 
         } else {
@@ -107,7 +108,7 @@ class DiziMom : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("${mainUrl}/?s=${query}", interceptor = interceptor).document
+        val document = app.get("?s=${query}", interceptor = interceptor).document
 
         return document.select("div.single-item").mapNotNull { it.diziler() }
     }
@@ -164,7 +165,7 @@ class DiziMom : MainAPI() {
         val ua = mapOf("User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36")
 
         app.post(
-            "${mainUrl}/wp-login.php",
+            "wp-login.php",
             headers = ua,
             referer = "${mainUrl}/",
             data    = mapOf(

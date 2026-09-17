@@ -32,19 +32,20 @@ class SezonlukDizi : MainAPI() {
     override val supportedTypes       = setOf(TvType.TvSeries)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/diziler.asp?siralama_tipi=id&s="          to "Son Eklenenler",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&tur=mini&s=" to "Mini Diziler",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&kat=2&s="    to "Yerli Diziler",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&kat=1&s="    to "Yabancı Diziler",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&kat=3&s="    to "Asya Dizileri",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&kat=4&s="    to "Animasyonlar",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&kat=5&s="    to "Animeler",
-        "${mainUrl}/diziler.asp?siralama_tipi=id&kat=6&s="    to "Belgeseller",
+        "diziler.asp?siralama_tipi=id&s="          to "Son Eklenenler",
+        "diziler.asp?siralama_tipi=id&tur=mini&s=" to "Mini Diziler",
+        "diziler.asp?siralama_tipi=id&kat=2&s="    to "Yerli Diziler",
+        "diziler.asp?siralama_tipi=id&kat=1&s="    to "Yabancı Diziler",
+        "diziler.asp?siralama_tipi=id&kat=3&s="    to "Asya Dizileri",
+        "diziler.asp?siralama_tipi=id&kat=4&s="    to "Animasyonlar",
+        "diziler.asp?siralama_tipi=id&kat=5&s="    to "Animeler",
+        "diziler.asp?siralama_tipi=id&kat=6&s="    to "Belgeseller",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val document = app.get("${request.data}${page}").document
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val document = app.get("${pageUrl}${page}").document
         val home     = document.select("div.afis a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(request.name, home)
@@ -60,7 +61,7 @@ class SezonlukDizi : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("${mainUrl}/diziler.asp?adi=${query}").document
+        val document = app.get("$mainUrl/diziler.asp?adi=${query}").document
 
         return document.select("div.afis a").mapNotNull { it.toSearchResult() }
     }
@@ -80,13 +81,13 @@ class SezonlukDizi : MainAPI() {
 
         val endpoint    = url.split("/").last()
 
-        val actorsReq  = app.get("${mainUrl}/oyuncular/${endpoint}").document
+        val actorsReq  = app.get("oyuncular/${endpoint}").document
         val actors     = actorsReq.select("div.doubling div.ui").mapNotNull {
             val actorName = it.selectFirst("div.header")?.text()?.trim() ?: return@mapNotNull null
             Actor(actorName, fixUrlNull(it.selectFirst("img")?.attr("src")))
         }
 
-        val episodesReq = app.get("${mainUrl}/bolumler/${endpoint}").document
+        val episodesReq = app.get("bolumler/${endpoint}").document
         val episodes    = mutableListOf<Episode>()
         for (sezon in episodesReq.select("table.unstackable")) {
             for (bolum in sezon.select("tbody tr")) {
@@ -133,7 +134,7 @@ class SezonlukDizi : MainAPI() {
 
         // --- ALTYAZI KISMI ---
         val altyaziResponse = app.post(
-            "${mainUrl}/ajax/dataAlternatif${aspData.alternatif}.asp",
+            "ajax/dataAlternatif${aspData.alternatif}.asp",
             headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
             data = mapOf(
                 "bid" to bid,
@@ -146,7 +147,7 @@ class SezonlukDizi : MainAPI() {
                 Log.d("SZD", "dil»1 | veri.baslik » ${veri.baslik}")
 
                 val veriResponse = app.post(
-                    "${mainUrl}/ajax/dataEmbed${aspData.embed}.asp",
+                    "ajax/dataEmbed${aspData.embed}.asp",
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                     data = mapOf("id" to "${veri.id}")
                 ).document
@@ -161,7 +162,7 @@ class SezonlukDizi : MainAPI() {
 
         // --- DUBLAJ KISMI ---
         val dublajResponse = app.post(
-            "${mainUrl}/ajax/dataAlternatif${aspData.alternatif}.asp",
+            "ajax/dataAlternatif${aspData.alternatif}.asp",
             headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
             data = mapOf(
                 "bid" to bid,
@@ -174,7 +175,7 @@ class SezonlukDizi : MainAPI() {
                 Log.d("SZD", "dil»0 | veri.baslik » ${veri.baslik}")
 
                 val veriResponse = app.post(
-                    "${mainUrl}/ajax/dataEmbed${aspData.embed}.asp",
+                    "ajax/dataEmbed${aspData.embed}.asp",
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                     data = mapOf("id" to "${veri.id}")
                 ).document

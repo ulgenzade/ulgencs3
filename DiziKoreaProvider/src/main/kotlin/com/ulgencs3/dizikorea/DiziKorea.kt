@@ -59,17 +59,18 @@ class DiziKorea : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/kore-dizileri-izle-dq/sayfa/"   to "Kore Dizileri",
-        "${mainUrl}/kore-filmleri-izle-dq/sayfa/" to "Kore Filmleri",
-        "${mainUrl}/tayland-dizileri/sayfa/"    to "Tayland Dizileri",
-        "${mainUrl}/tayland-filmleri/sayfa/"    to "Tayland Filmleri",
-        "${mainUrl}/cin-dizileri/sayfa/"        to "Çin Dizileri",
-        "${mainUrl}/cin-filmleri/sayfa/"        to "Çin Filmleri"
+        "kore-dizileri-izle-dq/sayfa/"   to "Kore Dizileri",
+        "kore-filmleri-izle-dq/sayfa/"   to "Kore Filmleri",
+        "tayland-dizileri/sayfa/"         to "Tayland Dizileri",
+        "tayland-filmleri/sayfa/"         to "Tayland Filmleri",
+        "cin-dizileri/sayfa/"             to "Çin Dizileri",
+        "cin-filmleri/sayfa/"             to "Çin Filmleri"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val document = app.get("${request.data}${page}", interceptor = interceptor).document
+        val url = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val document = app.get("${url}${page}", interceptor = interceptor).document
         Log.d("DZK", "Ana sayfa HTML içeriği:\n${document.outerHtml()}")
         val home     = document.select("a.poster-card").mapNotNull { it.toSearchResult() }
 
@@ -89,7 +90,7 @@ class DiziKorea : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
         val response = app.get(
-            "${mainUrl}/ara?q=$query",
+            "ara?q=$query",
             interceptor = interceptor
         ).parsedSafe<KoreaSearchResponse>()
 
@@ -157,7 +158,6 @@ class DiziKorea : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-        ensureInit()
         ensureInit()
     Log.d("DZK", "data » $data")
     val document = app.get(data, interceptor = interceptor).document

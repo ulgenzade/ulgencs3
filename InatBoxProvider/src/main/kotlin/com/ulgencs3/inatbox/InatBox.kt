@@ -91,6 +91,7 @@ class InatBox : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val jsonResponse =
             makeInatRequest(request.data) ?: return newHomePageResponse(request.name, emptyList())
 

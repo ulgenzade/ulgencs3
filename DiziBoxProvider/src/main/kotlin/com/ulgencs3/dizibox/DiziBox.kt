@@ -70,19 +70,19 @@ class DiziBox : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/tum-bolumler/page/SAYFA/"                        to "Son Bölümler",
-        "${mainUrl}/tum-bolumler/page/SAYFA/?tip=populer"            to "Popüler Diziler",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/"                         to "Yeni Eklenenler",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?ulke[]=turkiye&yil=&imdb" to "Yerli Diziler",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=aksiyon&yil&imdb" to "Aksiyon",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=bilimkurgu&yil&imdb" to "Bilimkurgu",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=komedi&yil&imdb"  to "Komedi",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=dram&yil&imdb"    to "Dram",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=fantastik&yil&imdb" to "Fantastik",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=gerilim&yil&imdb" to "Gerilim",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=korku&yil&imdb"   to "Korku",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=romantik&yil&imdb" to "Romantik",
-        "${mainUrl}/dizi-arsivi/page/SAYFA/?tur[0]=animasyon&yil&imdb" to "Animasyon"
+        "tum-bolumler/page/SAYFA/"                        to "Son Bölümler",
+        "tum-bolumler/page/SAYFA/?tip=populer"            to "Popüler Diziler",
+        "dizi-arsivi/page/SAYFA/"                         to "Yeni Eklenenler",
+        "dizi-arsivi/page/SAYFA/?ulke[]=turkiye&yil=&imdb" to "Yerli Diziler",
+        "dizi-arsivi/page/SAYFA/?tur[0]=aksiyon&yil&imdb" to "Aksiyon",
+        "dizi-arsivi/page/SAYFA/?tur[0]=bilimkurgu&yil&imdb" to "Bilimkurgu",
+        "dizi-arsivi/page/SAYFA/?tur[0]=komedi&yil&imdb"  to "Komedi",
+        "dizi-arsivi/page/SAYFA/?tur[0]=dram&yil&imdb"    to "Dram",
+        "dizi-arsivi/page/SAYFA/?tur[0]=fantastik&yil&imdb" to "Fantastik",
+        "dizi-arsivi/page/SAYFA/?tur[0]=gerilim&yil&imdb" to "Gerilim",
+        "dizi-arsivi/page/SAYFA/?tur[0]=korku&yil&imdb"   to "Korku",
+        "dizi-arsivi/page/SAYFA/?tur[0]=romantik&yil&imdb" to "Romantik",
+        "dizi-arsivi/page/SAYFA/?tur[0]=animasyon&yil&imdb" to "Animasyon"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
