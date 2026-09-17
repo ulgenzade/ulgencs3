@@ -36,8 +36,12 @@ import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import org.json.JSONObject
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 
 
 class Dizilla : MainAPI() {
@@ -507,14 +511,15 @@ class Dizilla : MainAPI() {
                                         item.sources?.forEach { src ->
                                             val m3u8 = src.file?.replace("m.php", "master.m3u8") ?: return@forEach
                                             callback(
-                                                ExtractorLink(
+                                                newExtractorLink(
                                                     source = "Dizilla - Pichive",
                                                     name = "Dizilla [${src.title ?: "Orijinal"}]",
                                                     url = m3u8,
-                                                    referer = finalUrl,
-                                                    quality = Qualities.Unknown.value,
-                                                    isM3u8 = true
-                                                )
+                                                    type = ExtractorLinkType.M3U8
+                                                ) {
+                                                    this.quality = Qualities.Unknown.value
+                                                    this.referer = finalUrl
+                                                }
                                             )
                                             linkFound = true
                                         }
