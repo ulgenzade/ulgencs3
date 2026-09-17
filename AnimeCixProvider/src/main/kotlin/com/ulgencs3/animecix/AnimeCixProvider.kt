@@ -236,8 +236,11 @@ class AnimeCixProvider : MainAPI() {
         val episodes = mutableListOf<Episode>()
         val titleId = url.substringAfter("?titleId=")
 
-        if (response.title?.titleType == "anime" || response.title?.seasons?.isNotEmpty() == true) {
-            for (sezon in response.title.seasons) {
+        val animeData = response.title ?: return null
+        val seasons = animeData.seasons
+
+        if (animeData.titleType == "anime" || seasons.isNotEmpty()) {
+            for (sezon in seasons) {
                 val sezonResponse = runCatching {
                     app.get(
                         "$mainUrl/secure/related-videos?episode=1&season=${sezon.number}&videoId=0&titleId=$titleId",
@@ -247,7 +250,7 @@ class AnimeCixProvider : MainAPI() {
                 }.getOrNull()
 
                 sezonResponse?.videos?.forEach { video ->
-                    val epUrl = video.url.takeIf { it.isNotBlank() } ?: return@forEach
+                    val epUrl = video.url?.takeIf { it.isNotBlank() } ?: return@forEach
                     episodes.add(newEpisode(epUrl) {
                         this.name = "${video.seasonNum ?: sezon.number}. Sezon ${video.episodeNum ?: 1}. Bölüm"
                         this.season = video.seasonNum ?: sezon.number
@@ -256,8 +259,8 @@ class AnimeCixProvider : MainAPI() {
                 }
             }
         } else {
-            if (response.title?.videos?.isNotEmpty() == true) {
-                val epUrl = response.title.videos.first().url.takeIf { it.isNotBlank() }
+            if (animeData.videos.isNotEmpty()) {
+                val epUrl = animeData.videos.first().url?.takeIf { it.isNotBlank() }
                 if (epUrl != null) {
                     episodes.add(newEpisode(epUrl) {
                         this.name = "Filmi İzle"
@@ -268,7 +271,7 @@ class AnimeCixProvider : MainAPI() {
             }
         }
 
-        val anime = response.title ?: return null
+        val anime = animeData
         val titleName = anime.title ?: anime.nameEnglish ?: anime.altTitle ?: "İsimsiz Anime"
 
         return newTvSeriesLoadResponse(
