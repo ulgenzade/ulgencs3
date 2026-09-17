@@ -10,11 +10,23 @@ local.properties
 *.dex
 out/
 captures/
+
+# Python cache
 __pycache__/
 *.pyc
-.DS_Store
-Thumbs.db
-repolar/
-repolar_extracted/
+*.pyo
+scripts/
+
+# Geliştirici notları ve araçları
 docs/
 PROJE_DURUMU_VE_YOL_HARITASI.md
+make_plugins_json.py
+repolar/
+repolar_extracted/
+
+# Ekran görüntüleri
+EkranGoruntusu/
+
+# OS
+.DS_Store
+Thumbs.db
