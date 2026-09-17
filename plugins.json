@@ -6,7 +6,7 @@
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnimeCixProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 28833,
+    "fileSize": 28730,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -27,7 +27,7 @@
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AniziumProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 19694,
+    "fileSize": 20619,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -48,7 +48,7 @@
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnizmProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 17257,
+    "fileSize": 18246,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -63,13 +63,72 @@
     "iconUrl": "https://anizm.net/favicon.ico"
   },
   {
+    "name": "DiziPal",
+    "internalName": "DiziPalProvider",
+    "pluginClassName": "com.ulgencs3.dizipal.DiziPalPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziPalProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 22772,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries",
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "DiziPal güncel yerli/yabancı dizi ve film arşivi. Netflix, Exxen, BluTV, Disney+, Prime Video platform içerikleri.",
+    "iconUrl": "https://dizipal2132.com/favicon.ico"
+  },
+  {
+    "name": "FilmModu",
+    "internalName": "FilmModuProvider",
+    "pluginClassName": "com.ulgencs3.filmmodu.FilmModuPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FilmModuProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 17172,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Türkçe Dublaj ve Altyazılı Full HD Film platformu. Doğrudan yüksek hızlı M3U8 video akışı ve Türkçe altyazı desteği.",
+    "iconUrl": "https://www.filmmodu.one/favicon.ico"
+  },
+  {
+    "name": "HDFilmCehennemi",
+    "internalName": "HDFilmCehennemiProvider",
+    "pluginClassName": "com.ulgencs3.hdfilmcehennemi.HDFilmCehennemiPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/HDFilmCehennemiProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 28193,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Türkiye'nin en büyük film ve yabancı dizi arşivi. IMDB 7+ filmler, popüler diziler ve alternatif sunucular.",
+    "iconUrl": "https://www.hdfilmcehennemi.nl/favicon.ico"
+  },
+  {
     "name": "OpenAnime",
     "internalName": "OpenAnimeProvider",
     "pluginClassName": "com.ulgencs3.openanime.OpenAnimePlugin",
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/OpenAnimeProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 19143,
+    "fileSize": 20275,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -90,7 +149,7 @@
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TrAnimeIzleProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 15613,
+    "fileSize": 16558,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -111,7 +170,7 @@
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TurkAnimeProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 21934,
+    "fileSize": 22179,
     "status": 1,
     "language": "tr",
     "tvTypes": [
