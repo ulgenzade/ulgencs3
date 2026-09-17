@@ -7,9 +7,6 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class SezonlukDizi : MainAPI() {
     override var mainUrl              = "https://sezonlukdizi.cc"
@@ -139,20 +136,17 @@ class SezonlukDizi : MainAPI() {
                 Log.d("SZD", "dil»1 | iframe » $iframe")
 
                 loadExtractor(iframe, "${mainUrl}/", subtitleCallback) { link ->
-                    CoroutineScope(Dispatchers.IO).launch {
-                        callback.invoke(
-                            newExtractorLink(
-                                source = "AltYazı - ${veri.baslik}",
-                                name = "AltYazı - ${veri.baslik}",
-                                url = link.url,
-                                type = link.type
-                            ) {
-                                // İsteğinize uygun olarak Quality, Headers'dan önce geliyor.
-                                this.quality = link.quality
-                                this.headers = link.headers
-                            }
-                        )
-                    }
+                    callback.invoke(
+                        newExtractorLink(
+                            source = "AltYazı - ${veri.baslik}",
+                            name = "AltYazı - ${veri.baslik}",
+                            url = link.url,
+                            type = link.type
+                        ) {
+                            this.quality = link.quality
+                            this.headers = link.headers
+                        }
+                    )
                 }
             }
         }
@@ -182,20 +176,17 @@ class SezonlukDizi : MainAPI() {
                 Log.d("SZD", "dil»0 | iframe » $iframe")
 
                 loadExtractor(iframe, "${mainUrl}/", subtitleCallback) { link ->
-                    CoroutineScope(Dispatchers.IO).launch {
-                        callback.invoke(
-                    newExtractorLink(
-                        source = "Dublaj - ${veri.baslik}",
-                        name = "Dublaj - ${veri.baslik}",
-                        url = link.url,
-                        type = link.type
-                    ) {
-                        // Quality, Headers'dan önce
-                        this.quality = link.quality
-                        this.headers = link.headers
-                    }
-                        )
-                    }
+                    callback.invoke(
+                        newExtractorLink(
+                            source = "Dublaj - ${veri.baslik}",
+                            name = "Dublaj - ${veri.baslik}",
+                            url = link.url,
+                            type = link.type
+                        ) {
+                            this.quality = link.quality
+                            this.headers = link.headers
+                        }
+                    )
                 }
             }
         }
