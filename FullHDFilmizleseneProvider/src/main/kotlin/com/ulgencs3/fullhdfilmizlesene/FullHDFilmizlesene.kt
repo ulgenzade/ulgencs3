@@ -27,7 +27,7 @@ class FullHDFilmizlesene : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["fullhdfilmizlesene"]
+            org.json.JSONObject(config).optString("fullhdfilmizlesene")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

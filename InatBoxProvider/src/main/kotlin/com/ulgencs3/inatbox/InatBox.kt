@@ -40,7 +40,21 @@ import org.json.JSONException
 import org.json.JSONObject
 
 class InatBox : MainAPI() {
-    private val contentUrl = "https://diziboxen.help/CDN/001/002/dizibox"
+    private var contentUrl = "https://diziboxen.help/CDN/001/002/dizibox"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            org.json.JSONObject(config).optString("inatbox")
+                .takeIf { it.isNotBlank() }?.let { contentUrl = it }
+        } catch (_: Exception) { }
+    }
 
     override var name = "InatBox"
     override val hasMainPage = true

@@ -37,7 +37,7 @@ class FilmModuProvider : MainAPI() {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["filmmodu"]
+            org.json.JSONObject(config).optString("filmmodu")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

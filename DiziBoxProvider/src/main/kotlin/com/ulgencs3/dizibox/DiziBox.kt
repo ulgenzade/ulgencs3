@@ -26,7 +26,7 @@ class DiziBox : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["dizibox"]
+            org.json.JSONObject(config).optString("dizibox")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }
@@ -211,6 +211,7 @@ class DiziBox : MainAPI() {
                 }
 
                 val sNum = Regex("""(\d+)\.? ?Sezon""").find(epRawTitle)?.groupValues?.get(1)?.toIntOrNull() ?: 1
+                val eNum = Regex("""(\d+)\.? ?Bölüm""").find(epRawTitle)?.groupValues?.get(1)?.toIntOrNull()
                 val epSpecialTitle = epElem.selectFirst("span.episode-title, span.title, div.entry-title")?.text()?.trim()
                 val epThumb = fixUrlNull(epElem.selectFirst("img")?.attr("src") ?: epElem.selectFirst("img")?.attr("data-src"))
 

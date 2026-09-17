@@ -19,7 +19,7 @@ class Sinewix : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["sinewix"]
+            org.json.JSONObject(config).optString("sinewix")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

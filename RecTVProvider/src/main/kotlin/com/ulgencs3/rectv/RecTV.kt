@@ -25,7 +25,7 @@ class RecTV : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["rectv"]
+            org.json.JSONObject(config).optString("rectv")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

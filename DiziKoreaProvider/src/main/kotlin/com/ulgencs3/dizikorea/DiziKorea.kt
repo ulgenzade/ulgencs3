@@ -25,7 +25,7 @@ class DiziKorea : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["dizikorea"]
+            org.json.JSONObject(config).optString("dizikorea")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

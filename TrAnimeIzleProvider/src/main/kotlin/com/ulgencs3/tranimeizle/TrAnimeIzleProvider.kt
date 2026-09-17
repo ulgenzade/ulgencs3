@@ -34,7 +34,7 @@ class TrAnimeIzleProvider : MainAPI() {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["tranimeizle"]
+            org.json.JSONObject(config).optString("tranimeizle")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
 
             app.get(mainUrl, headers = commonHeaders)

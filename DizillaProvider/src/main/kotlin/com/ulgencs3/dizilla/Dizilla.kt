@@ -64,7 +64,7 @@ class Dizilla : MainAPI() {
         isInitialized = true
         try {
             val config = app.get("https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json", timeout = 5).text
-            com.lagradost.cloudstream3.utils.AppUtils.parseJson<Map<String, String>>(config)["dizilla"]
+            com.lagradost.cloudstream3.utils.org.json.JSONObject(config).optString("dizilla")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) {}
     }

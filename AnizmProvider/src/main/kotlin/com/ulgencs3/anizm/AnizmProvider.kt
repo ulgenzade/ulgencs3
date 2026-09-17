@@ -52,7 +52,7 @@ class AnizmProvider : MainAPI() {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["anizm"]
+            org.json.JSONObject(config).optString("anizm")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

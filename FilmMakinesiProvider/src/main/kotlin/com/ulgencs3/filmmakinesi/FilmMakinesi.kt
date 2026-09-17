@@ -21,7 +21,7 @@ class FilmMakinesi : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["filmmakinesi"]
+            org.json.JSONObject(config).optString("filmmakinesi")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

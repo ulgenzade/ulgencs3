@@ -37,7 +37,7 @@ class AniziumProvider : MainAPI() {
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
                 timeout = 5
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["anizium"]
+            org.json.JSONObject(config).optString("anizium")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }
@@ -302,7 +302,7 @@ class AniziumProvider : MainAPI() {
                                 this.quality = qualValue
                                 this.headers = mapOf(
                                     "Referer" to "$mainUrl/",
-                                    "User-Agent" to app.defaultUserAgent
+                                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
                                 )
                             }
                         )

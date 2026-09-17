@@ -38,7 +38,7 @@ class DiziPalProvider : MainAPI() {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["dizipal"]
+            org.json.JSONObject(config).optString("dizipal")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }

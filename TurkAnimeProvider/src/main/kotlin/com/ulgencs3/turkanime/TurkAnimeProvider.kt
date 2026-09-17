@@ -37,12 +37,11 @@ class TurkAnimeProvider : MainAPI() {
         isInitialized = true
         try {
             val configText = app.get(
-                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
             ).text
-            val dynamic = AppUtils.parseJson<Map<String, String>>(configText)
-            dynamic["turkanime"]?.takeIf { it.isNotBlank() }?.let {
-                mainUrl = it
-            }
+            org.json.JSONObject(configText).optString("turkanime")
+                .takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
     }
 

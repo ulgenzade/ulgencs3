@@ -36,7 +36,7 @@ class OpenAnimeProvider : MainAPI() {
             val config = app.get(
                 "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
             ).text
-            AppUtils.parseJson<Map<String, String>>(config)["openanime"]
+            org.json.JSONObject(config).optString("openanime")
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
 
             val doc = app.get(mainUrl, headers = commonHeaders).document
