@@ -10,6 +10,21 @@ import com.lagradost.cloudstream3.utils.*
 
 class BelgeselX : MainAPI() {
     override var mainUrl              = "https://belgeselx.com"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["belgeselx"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "BelgeselX"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -39,6 +54,7 @@ class BelgeselX : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val url = if (page == 1) {
             request.data
         } else {
@@ -71,6 +87,7 @@ class BelgeselX : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val cx = "016376594590146270301:iwmy65ijgrm" // ! Might change in the future
 
         val tokenResponse = app.get("https://cse.google.com/cse.js?cx=${cx}")
@@ -105,6 +122,7 @@ class BelgeselX : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val title = document.selectFirst("h1.px-hero-title")?.text()?.trim()?.toTitleCase() ?: return null
@@ -151,8 +169,11 @@ class BelgeselX : MainAPI() {
                 epHref = "$epHref$suffix"
             }
 
+            val cleanName = epName.replace(Regex("""^\s*(?:\d+\.\s*Bölüm|S\d+\s*B\d+)\s*[-–:]*\s*"""), "").trim()
+            val finalName = cleanName.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+
             episodes.add(newEpisode(epHref) {
-                this.name    = epName
+                this.name    = finalName
                 this.season  = epSeason
                 this.episode = epEpisode
             })
@@ -196,6 +217,8 @@ class BelgeselX : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("BLX", "loadLinks data » $data")
 
         val episodeId = data.substringAfter("?epId=", "").substringBefore("&")

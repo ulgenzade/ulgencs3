@@ -130,11 +130,14 @@ class TurkAnimeProvider : MainAPI() {
                 val epName = li.selectFirst("span.bolumAdi")?.text()?.trim()
                     ?: li.selectFirst("a[href*='/video/']")?.attr("title")?.trim() ?: "Bölüm"
                 val epNum = Regex("""(\d+)\.\s*[Bb]ölüm""").find(epName)?.groupValues?.get(1)?.toIntOrNull()
+                val cleanName = epName.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val finalName = cleanName.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
 
                 episodes.add(newEpisode(epLink) {
-                    name = epName
+                    name = finalName
                     episode = epNum
                     season = 1
+                    posterUrl = poster
                 })
             }
         }
@@ -145,10 +148,13 @@ class TurkAnimeProvider : MainAPI() {
                 val epUrl = fixUrlNull(el.attr("href")) ?: return@forEach
                 val epText = el.text().trim()
                 val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
+                val cleanText = epText.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val fallbackName = cleanText.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
                 episodes.add(newEpisode(epUrl) {
-                    name = epText.ifBlank { "Bölüm $epNum" }
+                    name = fallbackName
                     episode = epNum
                     season = 1
+                    posterUrl = poster
                 })
             }
         }

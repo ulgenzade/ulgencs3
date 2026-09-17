@@ -177,10 +177,18 @@ class HDFilmCehennemiProvider : MainAPI() {
                 val epEpisode = Regex("""(\d+)\.\s*Bölüm""").find(epName)?.groupValues?.get(1)?.toIntOrNull()
                 val epSeason = Regex("""(\d+)\.\s*Sezon""").find(epName)?.groupValues?.get(1)?.toIntOrNull() ?: 1
 
+                val cleanEpTitle = epName
+                    .replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
+                    .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                    .trim()
+                val finalName = cleanEpTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+                val epThumb = fixUrlNull(it.selectFirst("img")?.attr("data-src") ?: it.selectFirst("img")?.attr("src"))
+
                 newEpisode(epHref) {
-                    name = epName
+                    name = finalName
                     season = epSeason
                     episode = epEpisode
+                    posterUrl = epThumb ?: poster
                 }
             }
 

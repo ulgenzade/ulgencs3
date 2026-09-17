@@ -10,6 +10,21 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 
 class SezonlukDizi : MainAPI() {
     override var mainUrl              = "https://sezonlukdizi.cc"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["sezonlukdizi"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "SezonlukDizi"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -28,6 +43,7 @@ class SezonlukDizi : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val document = app.get("${request.data}${page}").document
         val home     = document.select("div.afis a").mapNotNull { it.toSearchResult() }
 
@@ -43,6 +59,7 @@ class SezonlukDizi : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.get("${mainUrl}/diziler.asp?adi=${query}").document
 
         return document.select("div.afis a").mapNotNull { it.toSearchResult() }
@@ -51,6 +68,7 @@ class SezonlukDizi : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.header")?.text()?.trim() ?: return null
@@ -63,22 +81,22 @@ class SezonlukDizi : MainAPI() {
         val endpoint    = url.split("/").last()
 
         val actorsReq  = app.get("${mainUrl}/oyuncular/${endpoint}").document
-        val actors     = actorsReq.select("div.doubling div.ui").map {
-            Actor(
-                it.selectFirst("div.header")!!.text().trim(),
-                fixUrlNull(it.selectFirst("img")?.attr("src"))
-            )
+        val actors     = actorsReq.select("div.doubling div.ui").mapNotNull {
+            val actorName = it.selectFirst("div.header")?.text()?.trim() ?: return@mapNotNull null
+            Actor(actorName, fixUrlNull(it.selectFirst("img")?.attr("src")))
         }
-
 
         val episodesReq = app.get("${mainUrl}/bolumler/${endpoint}").document
         val episodes    = mutableListOf<Episode>()
         for (sezon in episodesReq.select("table.unstackable")) {
             for (bolum in sezon.select("tbody tr")) {
-                val epName    = bolum.selectFirst("td:nth-of-type(4) a")?.text()?.trim() ?: continue
+                val rawEpName = bolum.selectFirst("td:nth-of-type(4) a")?.text()?.trim() ?: continue
                 val epHref    = fixUrlNull(bolum.selectFirst("td:nth-of-type(4) a")?.attr("href")) ?: continue
                 val epEpisode = bolum.selectFirst("td:nth-of-type(3)")?.text()?.substringBefore(".Bölüm")?.trim()?.toIntOrNull()
                 val epSeason  = bolum.selectFirst("td:nth-of-type(2)")?.text()?.substringBefore(".Sezon")?.trim()?.toIntOrNull()
+
+                val cleanEpName = rawEpName.replace(Regex("""^\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val epName = cleanEpName.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
 
                 episodes.add(newEpisode(epHref) {
                     this.name    = epName
@@ -105,6 +123,8 @@ class SezonlukDizi : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("SZD", "data » $data")
         val document = app.get(data).document
         val aspData = getAspData()

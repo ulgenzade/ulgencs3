@@ -15,6 +15,21 @@ import javax.crypto.spec.SecretKeySpec
 
 class RecTV : MainAPI() {
     override var mainUrl              = "https://a.prectv71.lol"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["rectv"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "RecTV"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -93,6 +108,7 @@ class RecTV : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         @Suppress("NAME_SHADOWING") val page = page - 1
 
         val url      = request.data.replace("SAYFA", "$page")
@@ -117,6 +133,7 @@ class RecTV : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val path    = "/api/search/${query}/${swKey}/"
         val headers = signedHeaders("GET", path)
         val home    = app.get("${mainUrl}${path}", headers = headers)
@@ -144,6 +161,7 @@ class RecTV : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val veri = AppUtils.tryParseJson<RecItem>(url) ?: return null
 
         if (veri.type == "serie") {
@@ -161,10 +179,19 @@ class RecTV : MainAPI() {
                                       else if (sezon.title.contains("dublaj", ignoreCase = true)) DubStatus.Dubbed
                                       else DubStatus.None
                 for (bolum in sezon.episodes) {
+                    val rawBolumTitle = bolum.title.trim()
+                    val cleanBolumTitle = rawBolumTitle
+                        .replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
+                        .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                        .replace(Regex("""^Bölüm\s*\d+\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                        .trim()
+                    val finalBolumName = cleanBolumTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+                    val epNumber = numberRegex.find(bolum.title)?.value?.toIntOrNull()
+
                     episodes.getOrPut(seasonDubStatus) { mutableListOf() }.add(newEpisode(bolum.sources.first().url) {
-                        this.name        = bolum.title
+                        this.name        = finalBolumName
                         this.season      = numberRegex.find(sezon.title)?.value?.toIntOrNull()
-                        this.episode     = numberRegex.find(bolum.title)?.value?.toIntOrNull()
+                        this.episode     = epNumber
                         this.description = sezon.title.substringAfter(".S ")
                         this.posterUrl   = veri.image
                     })
@@ -197,6 +224,8 @@ class RecTV : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        ensureInit()
+        ensureInit()
         if (data.startsWith("http")) {
             Log.d("RCTV", "data » $data")
             callback.invoke(

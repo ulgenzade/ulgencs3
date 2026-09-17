@@ -14,6 +14,21 @@ import org.jsoup.Jsoup
 
 class DiziMom : MainAPI() {
     override var mainUrl              = "https://www.dizimom.diy"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["dizimom"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "DiziMom"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -54,6 +69,7 @@ class DiziMom : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val document = app.get("${request.data}${page}/", interceptor = interceptor).document
         val home     = if (request.data.contains("/tum-bolumler/")) {
             document.select("div.episode-box").mapNotNull { it.sonBolumler() } 
@@ -90,6 +106,7 @@ class DiziMom : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.get("${mainUrl}/?s=${query}", interceptor = interceptor).document
 
         return document.select("div.single-item").mapNotNull { it.diziler() }
@@ -98,6 +115,7 @@ class DiziMom : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url, interceptor = interceptor).document
 
         val title       = document.selectFirst("div.title h1")?.text()?.substringBefore(" izle") ?: return null
@@ -115,8 +133,15 @@ class DiziMom : MainAPI() {
             val epEpisode = Regex("""(\d+)\.Bölüm""").find(epName)?.groupValues?.get(1)?.toIntOrNull()
             val epSeason  = Regex("""(\d+)\.Sezon""").find(epName)?.groupValues?.get(1)?.toIntOrNull() ?: 1
 
+            val rawTitle = epName.substringBefore(" izle").replace(title, "").trim()
+            val cleanTitle = rawTitle
+                .replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                .trim()
+            val cleanName = cleanTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+
             newEpisode(epHref) {
-                this.name    = epName.substringBefore(" izle").replace(title, "").trim()
+                this.name    = cleanName
                 this.season  = epSeason
                 this.episode = epEpisode
             }
@@ -132,6 +157,8 @@ class DiziMom : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("DZM", "data » $data")
 
         val ua = mapOf("User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36")

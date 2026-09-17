@@ -9,6 +9,21 @@ import com.lagradost.nicehttp.NiceResponse
 
 class Sinewix : MainAPI() {
     override var mainUrl = "https://ydfvfdizipanel.ru"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["sinewix"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name = "Sinewix"
     override val hasMainPage = true
     override var lang = "tr"
@@ -47,6 +62,7 @@ class Sinewix : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val response = app.get("${request.data}?page=$page", headers = sineHeaders).text
         
         val items = if (request.name == "Yeni Bölümler") {
@@ -59,12 +75,14 @@ class Sinewix : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val response = app.get("$mainUrl/public/api/search/$query/$apiToken", headers = sineHeaders).text
         val data = parseJson<SineWixResponseHash>(response)
         return data.searchResponse?.mapNotNull { it.toSearchResponse(null) } ?: emptyList()
     }
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val responseText = app.get(url, headers = sineHeaders).text
         val it = parseJson<SineWixIcerikler>(responseText)
         
@@ -77,9 +95,16 @@ class Sinewix : MainAPI() {
         return if (type == TvType.TvSeries || type == TvType.Anime) {
             val episodes = it.seasons?.flatMap { season ->
                 season.episodes?.map { episode ->
-                val videoLink = episode.videos?.firstOrNull()?.link
+                val rawEpName = episode.name?.trim() ?: ""
+                val cleanEpTitle = rawEpName
+                    .replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
+                    .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                    .replace(Regex("""^Bölüm\s*\d+\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                    .trim()
+                val finalName = cleanEpTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) && it != "${episode.episodeNumber}" }
+
                     newEpisode(videoLink ?: "") {
-                        this.name = episode.name ?: "Bölüm ${episode.episodeNumber}"
+                        this.name = finalName
                         this.season = season.seasonNumber
                         this.episode = episode.episodeNumber
                         this.posterUrl = episode.stillPath ?: episode.stillPathTv
@@ -111,6 +136,8 @@ class Sinewix : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         if (data.isBlank()) return false
         
         // Direkt video dosyası (mkv, mp4, m3u8, webm) ise ExtractorLink olarak ekle

@@ -38,6 +38,21 @@ import java.net.URLEncoder
 
 class WebteIzle : MainAPI() {
     override var mainUrl              = "https://webteizle.info"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["webteizle"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "WebteIzle"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -91,6 +106,7 @@ class WebteIzle : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val url = if ("SAYFA" in request.data) request.data.replace("SAYFA", "$page") else "${request.data}$page"
         val document = app.get(url).document
         val home = document.select("div.golgever").mapNotNull { it.toSearchResult() }
@@ -107,6 +123,7 @@ class WebteIzle : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         @Suppress("NAME_SHADOWING", "BlockingMethodInNonBlockingContext")
         val query = URLEncoder.encode(query, "ISO-8859-9")
 
@@ -122,6 +139,7 @@ class WebteIzle : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val title = document.selectFirst("[property='og:title']")?.attr("content")?.substringBefore(" izle") ?: return null
@@ -152,6 +170,8 @@ class WebteIzle : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("WBTI", "data » $data")
         val document = app.get(data).document
 

@@ -15,6 +15,21 @@ import org.jsoup.Jsoup
 
 class DiziKorea : MainAPI() {
     override var mainUrl              = "https://dizikorea3.com"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["dizikorea"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "DiziKorea"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -53,6 +68,7 @@ class DiziKorea : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val document = app.get("${request.data}${page}", interceptor = interceptor).document
         Log.d("DZK", "Ana sayfa HTML içeriği:\n${document.outerHtml()}")
         val home     = document.select("a.poster-card").mapNotNull { it.toSearchResult() }
@@ -71,6 +87,7 @@ class DiziKorea : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val response = app.get(
             "${mainUrl}/ara?q=$query",
             interceptor = interceptor
@@ -93,6 +110,7 @@ class DiziKorea : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url, interceptor = interceptor).document
 
         val title       = document.selectFirst("h1.series-title, h1.watch-title")?.text()?.trim() ?: return null
@@ -104,13 +122,21 @@ class DiziKorea : MainAPI() {
                 val epSeason = it.attr("data-season").toIntOrNull()
 
                 it.select("a.episode-item").forEach ep@ { episodeElement ->
-                    val epHref    = fixUrlNull(episodeElement.attr("href")) ?: return@ep
-                    val epEpisode = episodeElement.selectFirst("span.ep-number")?.text()?.trim()?.toIntOrNull()
+                    val epHref = fixUrlNull(episodeElement.attr("href")) ?: return@ep
+                    val epSpecialTitle = episodeElement.selectFirst("span.ep-title, span.title, div.title")?.text()?.trim()
+                    val cleanTitle = epSpecialTitle?.replace(Regex("""^\s*\d+\.?\s*(?:Sezon|Bölüm).*""", RegexOption.IGNORE_CASE), "")?.trim()
+                    val epEpisode = episodeElement.attr("data-episode").toIntOrNull()
+                        ?: Regex("""(\d+)\.\s*[Bb]ölüm""").find(episodeElement.text())?.groupValues?.get(1)?.toIntOrNull()
+                        ?: Regex("""/(\d+)-bolum""").find(epHref)?.groupValues?.get(1)?.toIntOrNull()
+                    val epThumb = fixUrlNull(episodeElement.selectFirst("img")?.attr("src") ?: episodeElement.selectFirst("img")?.attr("data-src"))
+                    val epDesc = episodeElement.selectFirst("p, div.desc, span.desc")?.text()?.trim()
 
                     episodes.add(newEpisode(epHref) {
-                        this.name = "${epSeason}. Sezon ${epEpisode}. Bölüm"
+                        this.name = cleanTitle?.takeIf { it.isNotBlank() }
                         this.season = epSeason
                         this.episode = epEpisode
+                        this.posterUrl = epThumb ?: poster
+                        this.description = epDesc
                     })
                 }
             }
@@ -131,6 +157,8 @@ class DiziKorea : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        ensureInit()
+        ensureInit()
     Log.d("DZK", "data » $data")
     val document = app.get(data, interceptor = interceptor).document
 

@@ -100,10 +100,13 @@ class TrAnimeIzleProvider : MainAPI() {
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
             val epText = el.text().trim()
             val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
+            val cleanText = epText.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+            val finalName = cleanText.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
             newEpisode(epUrl) {
-                name = epText.ifBlank { "Bölüm $epNum" }
+                name = finalName
                 episode = epNum
                 season = 1
+                posterUrl = poster
             }
         }.distinctBy { it.data }
 

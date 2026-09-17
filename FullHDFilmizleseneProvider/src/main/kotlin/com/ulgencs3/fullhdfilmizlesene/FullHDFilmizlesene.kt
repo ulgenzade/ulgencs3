@@ -17,6 +17,21 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 
 class FullHDFilmizlesene : MainAPI() {
     override var mainUrl              = "https://www.fullhdfilmizlesene.now"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["fullhdfilmizlesene"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "FullHDFilmizlesene"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -53,6 +68,7 @@ class FullHDFilmizlesene : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val document = app.get("${request.data}${page}").document
         val home     = document.select("li.film").mapNotNull { it.toSearchResult() }
 
@@ -68,6 +84,7 @@ class FullHDFilmizlesene : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.get("${mainUrl}/arama/${query}").document
 
         return document.select("li.film").mapNotNull { it.toSearchResult() }
@@ -76,6 +93,7 @@ class FullHDFilmizlesene : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val title           = document.selectFirst("div[class=izle-titles]")?.text()?.trim() ?: return null
@@ -171,6 +189,8 @@ class FullHDFilmizlesene : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("FHD", "data » $data")
         val document    = app.get(data).document
         val videoLinks = getVideoLinks(document)

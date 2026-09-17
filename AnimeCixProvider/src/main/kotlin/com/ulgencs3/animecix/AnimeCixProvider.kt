@@ -251,10 +251,16 @@ class AnimeCixProvider : MainAPI() {
 
                 sezonResponse?.videos?.forEach { video ->
                     val epUrl = video.url?.takeIf { it.isNotBlank() } ?: return@forEach
-                    val epTitle = video.name?.takeIf { it.isNotBlank() }
-                        ?: "${video.seasonNum ?: sezon.number}. Sezon ${video.episodeNum ?: 1}. Bölüm"
+                    
+                    val cleanName = video.name?.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "")?.trim()
+                    val specificName = cleanName?.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+                    
+                    // description alanı bazen özel bölüm adı (kısa), bazen de uzun bölümdür
+                    val shortDescAsTitle = video.description?.trim()?.takeIf { it.isNotBlank() && it.length <= 60 && !it.contains("bölüm", ignoreCase = true) }
+                    val finalEpTitle = specificName ?: shortDescAsTitle
+
                     episodes.add(newEpisode(epUrl) {
-                        this.name = epTitle
+                        this.name = finalEpTitle
                         this.season = video.seasonNum ?: sezon.number
                         this.episode = video.episodeNum ?: 1
                         this.description = video.description?.takeIf { it.isNotBlank() }

@@ -171,10 +171,12 @@ class OpenAnimeProvider : MainAPI() {
                 for (i in 0 until epsArray.length()) {
                     val ep = epsArray.getJSONObject(i)
                     val epNum = ep.optInt("number", i + 1)
-                    val epTitle = ep.optString("title").takeIf { it.isNotBlank() } ?: "Bölüm $epNum"
+                    val rawTitle = ep.optString("title").trim()
+                    val cleanTitle = rawTitle.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                    val finalName = cleanTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) && it != "$epNum" }
                     val epSlug = ep.optString("slug").takeIf { it.isNotBlank() } ?: epNum.toString()
                     episodes.add(newEpisode("$mainUrl/anime/$slug/$epSlug") {
-                        name = epTitle
+                        name = finalName
                         episode = epNum
                         season = 1
                         posterUrl = fixUrlNull(ep.optString("thumbnail"))
@@ -184,18 +186,22 @@ class OpenAnimeProvider : MainAPI() {
         } catch (_: Exception) {
             val doc = app.get(url, headers = commonHeaders).document
             val t = doc.selectFirst("h1, h2.anime-title")?.text()?.trim() ?: "Bilinmeyen Anime"
+            val fallbackPoster = fixUrlNull(doc.selectFirst("img.cover, div.poster img")?.attr("src"))
             val fallbackEpisodes = doc.select("ul.episodes li a, div.episode-list a, a[href*='/anime/$slug/']").mapNotNull { el ->
                 val epHref = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
                 val epText = el.text().trim()
                 val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
+                val cleanText = epText.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val fallbackName = cleanText.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
                 newEpisode(epHref) {
-                    name = epText.ifBlank { "Bölüm $epNum" }
+                    name = fallbackName
                     episode = epNum
                     season = 1
+                    posterUrl = fallbackPoster
                 }
             }.distinctBy { it.data }
             return newAnimeLoadResponse(t, url, TvType.Anime) {
-                this.posterUrl = fixUrlNull(doc.selectFirst("img.cover, div.poster img")?.attr("src"))
+                this.posterUrl = fallbackPoster
                 this.plot = doc.selectFirst("div.desc, p.description")?.text()?.trim()
                 addEpisodes(DubStatus.Subbed, fallbackEpisodes)
             }

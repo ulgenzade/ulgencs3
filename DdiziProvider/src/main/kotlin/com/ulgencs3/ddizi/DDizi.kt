@@ -16,6 +16,21 @@ import org.jsoup.nodes.Element
 
 class DDizi : MainAPI() {
     override var mainUrl              = "https://www.ddizi.im"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["ddizi"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "DDizi"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -30,6 +45,7 @@ class DDizi : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val url = if (page > 1) "${request.data}/$page" else request.data
         val document = app.get(url, headers = getHeaders(mainUrl)).document
     
@@ -83,6 +99,7 @@ class DDizi : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         Log.d("DDizi:", "Searching for $query")
         
         val formData = mapOf("arama" to query)
@@ -140,6 +157,7 @@ class DDizi : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val document = app.get(url, headers = getHeaders(mainUrl)).document
         val fullTitle = document.selectFirst("h1, h2, div.dizi-boxpost-cat a")?.text()?.trim() ?: ""
 
@@ -167,10 +185,13 @@ class DDizi : MainAPI() {
                         val name = ep.text().trim()
                         val href = fixUrl(ep.attr("href"))
                         val (epTitle, epSeason, epEpisode) = parseTitle(name)
+                        val cleanName = epTitle.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                        val finalName = cleanName.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
                         newEpisode(href) {
-                            this.name = epTitle
+                            this.name = finalName
                             this.season = epSeason
                             this.episode = epEpisode
+                            this.posterUrl = posterUrl
                         }
                     }
 
@@ -210,6 +231,7 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+    ensureInit()
     val document = app.get(data, headers = getHeaders(mainUrl)).document
 
     // Check for iframe with YouTube in src

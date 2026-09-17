@@ -193,10 +193,17 @@ class DiziPalProvider : MainAPI() {
                 val epSeason = match?.groupValues?.getOrNull(1)?.toIntOrNull()
                 val epEpisode = match?.groupValues?.getOrNull(2)?.toIntOrNull()
 
+                val cleanEpTitle = epName
+                    .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                    .trim()
+                val finalName = cleanEpTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+                val epThumb = fixUrlNull(anchor.selectFirst("img")?.attr("src") ?: anchor.selectFirst("img")?.attr("data-src"))
+
                 newEpisode(epHref) {
-                    name = epName
+                    name = finalName
                     episode = epEpisode
                     season = epSeason
+                    posterUrl = epThumb ?: poster
                 }
             }
 

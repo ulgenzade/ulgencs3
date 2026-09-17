@@ -1,14 +1,20 @@
 package com.ulgencs3.anizium
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Anizium Sağlayıcısı
  *
  * Site: https://anizium.co
- * Özellik: 4K (2160p) video ve çoklu gömülü oynatıcı desteği
+ * Özellik: 4K (2160p), Resmi REST API, Çoklu Altyazı Dilleri ve TR Dublaj desteği
  */
 class AniziumProvider : MainAPI() {
 
@@ -18,12 +24,8 @@ class AniziumProvider : MainAPI() {
     override var lang = "tr"
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
 
-    private val commonHeaders = mapOf(
-        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer" to "$mainUrl/",
-        "Accept" to "application/json, text/html, */*"
-    )
+    private val apiHost = "https://api.anizium.co"
+    private val tokenKey = "hlxjl1c2w281ax473rt1ofgrvhyjvi"
 
     private var isInitialized = false
 
@@ -32,11 +34,45 @@ class AniziumProvider : MainAPI() {
         isInitialized = true
         try {
             val config = app.get(
-                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json"
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
             ).text
             AppUtils.parseJson<Map<String, String>>(config)["anizium"]
                 ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) { }
+    }
+
+    private fun getCfControl(): String {
+        return try {
+            val sdf = SimpleDateFormat("EEEE", Locale.ENGLISH)
+            sdf.timeZone = TimeZone.getTimeZone("Europe/Istanbul")
+            val weekday = sdf.format(Date()).lowercase()
+            val key = "${tokenKey}_$weekday".toByteArray(Charsets.UTF_8)
+
+            val rnd = (1..6).map { ('a'..'z').random() }.joinToString("")
+            val payload = "{\"$rnd\":${System.currentTimeMillis()}}".toByteArray(Charsets.UTF_8)
+
+            val res = ByteArray(payload.size)
+            for (i in payload.indices) {
+                res[i] = (payload[i].toInt() xor key[i % key.size].toInt()).toByte()
+            }
+            res.joinToString("") { "%02x".format(it) }
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    private fun getApiHeaders(): Map<String, String> {
+        return mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Origin" to mainUrl,
+            "Referer" to "$mainUrl/",
+            "Cf-Control" to getCfControl(),
+            "device" to "browser",
+            "language" to "tr",
+            "site" to "main",
+            "Accept" to "application/json, text/plain, */*"
+        )
     }
 
     private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
@@ -46,29 +82,65 @@ class AniziumProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "content_type=anime&sort=last_episode" to "Son Bölümler",
-        "content_type=anime&sort=popular"      to "Popüler Animeler",
-        "content_type=anime&sort=rating"       to "En Yüksek Puanlı",
-        "content_type=anime&quality=4k"        to "4K Animeler"
+        "last-added" to "Son Eklenen Bölümler",
+        "popular"    to "Popüler Animeler",
+        "4k"         to "4K Ultra HD Animeler",
+        "action"     to "Aksiyon Animeleri",
+        "comedy"     to "Komedi Animeleri",
+        "drama"      to "Dram Animeleri",
+        "romance"    to "Romantizm Animeleri"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val apiResp = runCatching {
-            app.get(
-                "$mainUrl/api/contents?${request.data}&page=$page",
-                headers = commonHeaders
-            ).parsedSafe<AniziumApiResp>()
-        }.getOrNull()
+        val items = mutableListOf<SearchResponse>()
 
-        val items = if (apiResp?.data != null && apiResp.data.isNotEmpty()) {
-            apiResp.data.mapNotNull { it.toSearchResponse() }
+        if (request.data == "last-added") {
+            val res = runCatching {
+                app.get("$apiHost/page/last-added-episodes?page=$page", headers = getApiHeaders())
+                    .parsedSafe<AniziumLastAddedResp>()
+            }.getOrNull()
+
+            res?.page?.data?.forEach { item ->
+                val id = item.id ?: return@forEach
+                val title = item.name ?: "Anime"
+                val poster = item.poster ?: item.banner
+                val epNum = item.episode ?: 1
+                items.add(newAnimeSearchResponse(title, "$mainUrl/anime/$id", TvType.Anime) {
+                    this.posterUrl = fixUrlNull(poster)
+                    addDubStatus(DubStatus.Subbed, epNum)
+                })
+            }
         } else {
-            val doc = app.get(
-                "$mainUrl/anime-listesi?${request.data}&sayfa=$page",
-                headers = commonHeaders
-            ).document
-            doc.select("div.anime-card, article.content-item, div.item").mapNotNull { it.toSearchResult() }
+            val res = runCatching {
+                app.get("$apiHost/page/home", headers = getApiHeaders()).parsedSafe<AniziumHomeResp>()
+            }.getOrNull()
+
+            val list = when (request.data) {
+                "4k" -> res?.settlementTop?.filter { it.quality?.contains("4k", ignoreCase = true) == true }
+                "popular" -> res?.settlementTop
+                else -> res?.settlementMiddle ?: res?.settlementTop
+            } ?: emptyList()
+
+            list.forEach { item ->
+                val id = item.id ?: return@forEach
+                val title = item.name ?: return@forEach
+                val poster = item.poster ?: item.banner
+                items.add(newAnimeSearchResponse(title, "$mainUrl/anime/$id", TvType.Anime) {
+                    this.posterUrl = fixUrlNull(poster)
+                })
+            }
+        }
+
+        // API boş dönerse DOM fallback
+        if (items.isEmpty()) {
+            val doc = runCatching {
+                app.get("$mainUrl/anime-listesi?sayfa=$page", headers = getApiHeaders()).document
+            }.getOrNull()
+
+            doc?.select("div.anime-card, article.content-item, div.item")?.mapNotNull { it.toSearchResult() }?.let {
+                items.addAll(it)
+            }
         }
 
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
@@ -80,69 +152,102 @@ class AniziumProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val apiResp = runCatching {
-            app.get(
-                "$mainUrl/api/search?q=${query.encodeUrl()}&content_type=anime",
-                headers = commonHeaders
-            ).parsedSafe<AniziumApiResp>()
+        val res = runCatching {
+            app.get("$apiHost/page/search?q=${query.encodeUrl()}", headers = getApiHeaders())
+                .parsedSafe<AniziumSearchResp>()
         }.getOrNull()
 
-        if (apiResp?.data != null && apiResp.data.isNotEmpty()) {
-            return apiResp.data.mapNotNull { it.toSearchResponse() }
+        if (res?.data != null && res.data.isNotEmpty()) {
+            return res.data.mapNotNull { item ->
+                val id = item.id ?: return@mapNotNull null
+                val title = item.name ?: return@mapNotNull null
+                newAnimeSearchResponse(title, "$mainUrl/anime/$id", TvType.Anime) {
+                    this.posterUrl = fixUrlNull(item.poster ?: item.banner)
+                }
+            }
         }
 
-        val doc = app.get("$mainUrl/arama?q=${query.encodeUrl()}", headers = commonHeaders).document
-        return doc.select("div.anime-card, article.content-item, div.item").mapNotNull { it.toSearchResult() }
+        val doc = runCatching {
+            app.get("$mainUrl/arama?q=${query.encodeUrl()}", headers = getApiHeaders()).document
+        }.getOrNull()
+
+        return doc?.select("div.anime-card, article.content-item, div.item")?.mapNotNull { it.toSearchResult() }
+            ?: emptyList()
     }
 
     // -------------------------------------------------------------------------
     // Detay & Bölümler
     // -------------------------------------------------------------------------
 
-    override suspend fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse? {
         ensureInit()
-        val doc = app.get(url, headers = commonHeaders).document
+        val animeId = Regex("""(?:/anime/|id=)(\d+)""").find(url)?.groupValues?.get(1)
 
-        val title = doc.selectFirst("h1.content-title, h2.anime-title, h1")?.text()?.trim()
-            ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: "Bilinmeyen Anime"
-        val poster = fixUrlNull(
-            doc.selectFirst("div.content-poster img, img.anime-poster, div.poster img")?.attr("data-src")
-                ?: doc.selectFirst("div.content-poster img, img.anime-poster, div.poster img")?.attr("src")
-                ?: doc.selectFirst("meta[property=og:image]")?.attr("content")
-        )
-        val description = doc.selectFirst("div.content-desc, p.anime-desc, div.description")?.text()?.trim()
-        val tags = doc.select("a.genre-tag, span.tag, a[href*='tur']").map { it.text().trim() }
+        if (!animeId.isNullOrEmpty()) {
+            val res = runCatching {
+                app.get("$apiHost/anime/get?id=$animeId", headers = getApiHeaders()).parsedSafe<AniziumAnimeDetailResp>()
+            }.getOrNull()
 
-        val has4K = doc.selectFirst("span.quality-badge, div.quality")
-            ?.text()?.contains("4K", ignoreCase = true) == true
+            val anime = res?.data
+            if (anime != null) {
+                val title = anime.name ?: "Anime"
+                val poster = anime.poster ?: anime.banner
+                val overview = anime.overview
+                val genres = anime.genres?.mapNotNull { it.name } ?: emptyList()
+
+                val episodes = mutableListOf<Episode>()
+                anime.seasons?.forEach { season ->
+                    val sNum = season.number ?: 1
+                    season.episodes?.forEach { ep ->
+                        val epNum = ep.number ?: 1
+                        val epName = ep.name?.takeIf { it.isNotBlank() && !it.equals("Bölüm $epNum", ignoreCase = true) }
+                        val epUrl = "$mainUrl/watch/$animeId?season=$sNum&episode=$epNum&epId=${ep.id ?: ""}"
+
+                        episodes.add(newEpisode(epUrl) {
+                            this.name = epName
+                            this.season = sNum
+                            this.episode = epNum
+                            this.description = ep.overview?.takeIf { it.isNotBlank() }
+                            this.posterUrl = fixUrlNull(ep.bannerLink)
+                        })
+                    }
+                }
+
+                return newAnimeLoadResponse(title, url, TvType.Anime) {
+                    this.posterUrl = fixUrlNull(poster)
+                    this.plot = overview
+                    this.tags = genres
+                    addEpisodes(DubStatus.Subbed, episodes)
+                }
+            }
+        }
+
+        // DOM Fallback
+        val doc = app.get(url, headers = getApiHeaders()).document
+        val title = doc.selectFirst("h1.content-title, h2.anime-title, h1")?.text()?.trim() ?: "Anime"
+        val poster = fixUrlNull(doc.selectFirst("div.content-poster img, img.anime-poster")?.attr("src"))
+        val description = doc.selectFirst("div.content-desc, p.anime-desc")?.text()?.trim()
 
         val rawEpisodes = doc.select("div.episode-list a, ul.bolumler li a, a[href*='bolum']").mapNotNull { el ->
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
             val epText = el.text().trim()
             val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
             newEpisode(epUrl) {
-                name = epText.ifBlank { "Bölüm $epNum" }
-                episode = epNum
-                season = 1
+                this.name = epText.replace(Regex("""^\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").takeIf { it.isNotBlank() }
+                this.episode = epNum
+                this.season = 1
             }
         }.distinctBy { it.data }
-
-        val episodes = if (rawEpisodes.any { (it.episode ?: 0) > 0 }) {
-            rawEpisodes.sortedBy { it.episode ?: 0 }
-        } else {
-            rawEpisodes.reversed()
-        }
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             this.posterUrl = poster
             this.plot = description
-            this.tags = tags + if (has4K) listOf("4K") else emptyList()
-            addEpisodes(DubStatus.Subbed, episodes)
+            addEpisodes(DubStatus.Subbed, rawEpisodes)
         }
     }
 
     // -------------------------------------------------------------------------
-    // Medya Oynatıcıları
+    // Medya Oynatıcıları, Çoklu Altyazı & Dublaj
     // -------------------------------------------------------------------------
 
     override suspend fun loadLinks(
@@ -152,54 +257,78 @@ class AniziumProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         ensureInit()
-        val doc = app.get(data, headers = commonHeaders).document
-        val extractedUrls = mutableSetOf<String>()
+        val animeId = Regex("""(?:/watch/|/anime/|id=)(\d+)""").find(data)?.groupValues?.get(1)
+        val season = Regex("""season=(\d+)""").find(data)?.groupValues?.get(1) ?: "1"
+        val episode = Regex("""episode=(\d+)""").find(data)?.groupValues?.get(1) ?: "1"
 
-        // 1. 4K ve yüksek kalite doğrudan kaynaklar
+        if (!animeId.isNullOrEmpty()) {
+            val sourceUrl = "$apiHost/anime/source?id=$animeId&site=main&plan=free&season=$season&episode=$episode&server=1"
+            val res = runCatching {
+                app.get(sourceUrl, headers = getApiHeaders()).parsedSafe<AniziumSourceResp>()
+            }.getOrNull()
+
+            if (res != null && res.success == true) {
+                // 1. Çoklu Altyazı Dosyalarını Ekle (Türkçe, İngilizce, Almanca vb.)
+                res.subtitles?.forEach { sub ->
+                    val file = sub.link?.takeIf { it.isNotBlank() } ?: return@forEach
+                    val label = sub.name ?: sub.group ?: "Altyazı"
+                    subtitleCallback(newSubtitleFile(label, file))
+                }
+
+                // 2. Orijinal ve Türkçe Dublaj Video Akışlarını Ekle (4K, 1080p, 720p)
+                res.groups?.forEach { grp ->
+                    val isDub = grp.group?.contains("dub", ignoreCase = true) == true ||
+                            grp.name?.contains("dublaj", ignoreCase = true) == true
+                    val grpName = grp.name ?: if (isDub) "Türkçe Dublaj" else "Japonca"
+
+                    grp.items?.forEach { item ->
+                        val link = item.link?.takeIf { it.isNotBlank() } ?: return@forEach
+                        val q = item.quality ?: 1080
+                        val qualValue = when (q) {
+                            2160 -> Qualities.P2160.value
+                            1080 -> Qualities.P1080.value
+                            720  -> Qualities.P720.value
+                            480  -> Qualities.P480.value
+                            else -> Qualities.Unknown.value
+                        }
+
+                        callback(
+                            newExtractorLink(
+                                source = name,
+                                name = "$name [$grpName - ${q}p]",
+                                url = link,
+                                type = if (link.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                            ) {
+                                this.quality = qualValue
+                                this.headers = mapOf(
+                                    "Referer" to "$mainUrl/",
+                                    "User-Agent" to app.defaultUserAgent
+                                )
+                            }
+                        )
+                    }
+                }
+                return true
+            }
+        }
+
+        // DOM Fallback
+        val doc = app.get(data, headers = getApiHeaders()).document
         doc.select("source[src]").forEach { source ->
             val src = fixUrlNull(source.attr("src")) ?: return@forEach
-            if (!extractedUrls.add(src)) return@forEach
-
-            val label = source.attr("label").uppercase()
-            val quality = when {
-                label.contains("4K") || label.contains("2160") -> Qualities.P2160.value
-                label.contains("1080") -> Qualities.P1080.value
-                label.contains("720")  -> Qualities.P720.value
-                label.contains("480")  -> Qualities.P480.value
-                else                   -> Qualities.Unknown.value
-            }
             callback(
                 newExtractorLink(
                     source = name,
-                    name = "$name [$label]",
+                    name = "$name [Direct]",
                     url = src,
                     type = if (src.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                ) { this.quality = quality }
+                )
             )
         }
 
-        // 2. Alternatif oynatıcı sekmeleri (Vidmoly, Sibnet, OkRu vb.)
-        doc.select("button[data-player], button[data-embed], a[data-frame], div[data-video], div.player-item").forEach { btn ->
-            val embed = fixUrlNull(
-                btn.attr("data-player").takeIf { it.isNotBlank() }
-                    ?: btn.attr("data-embed").takeIf { it.isNotBlank() }
-                    ?: btn.attr("data-frame").takeIf { it.isNotBlank() }
-                    ?: btn.attr("data-video")
-            ) ?: return@forEach
-
-            if (extractedUrls.add(embed)) {
-                loadExtractor(embed, mainUrl, subtitleCallback, callback)
-            }
-        }
-
-        // 3. iframe embed'ler
-        doc.select("iframe[src], iframe[data-src]").forEach { iframe ->
-            val src = fixUrlNull(
-                iframe.attr("src").takeIf { it.isNotBlank() } ?: iframe.attr("data-src")
-            ) ?: return@forEach
-            if (!src.contains("a-ads.com") && extractedUrls.add(src)) {
-                loadExtractor(src, mainUrl, subtitleCallback, callback)
-            }
+        doc.select("iframe[src]").forEach { iframe ->
+            val src = fixUrlNull(iframe.attr("src")) ?: return@forEach
+            loadExtractor(src, mainUrl, subtitleCallback, callback)
         }
 
         return true
@@ -209,34 +338,99 @@ class AniziumProvider : MainAPI() {
     // Veri Modelleri
     // -------------------------------------------------------------------------
 
-    data class AniziumApiResp(val data: List<AniziumItem>? = null)
-    data class AniziumItem(
-        val id: Int? = null,
-        val title: String? = null,
-        val name: String? = null,
-        val poster: String? = null,
-        val slug: String? = null
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumLastAddedResp(val page: AniziumPageData? = null)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumPageData(val data: List<AniziumItem>? = null)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumHomeResp(
+        @JsonProperty("settlement_top") val settlementTop: List<AniziumItem>? = null,
+        @JsonProperty("settlement_middle") val settlementMiddle: List<AniziumItem>? = null
     )
 
-    private fun AniziumItem.toSearchResponse(): SearchResponse? {
-        val t = title ?: name ?: return null
-        val url = "https://anizium.co/anime/${slug ?: id ?: return null}"
-        return newAnimeSearchResponse(t, url, TvType.Anime) {
-            this.posterUrl = poster
-        }
-    }
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSearchResp(val data: List<AniziumItem>? = null)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumItem(
+        @JsonProperty("ID") val id: String? = null,
+        val name: String? = null,
+        val poster: String? = null,
+        val banner: String? = null,
+        val quality: String? = null,
+        val episode: Int? = null,
+        val overview: String? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumAnimeDetailResp(val data: AniziumDetailData? = null)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumDetailData(
+        @JsonProperty("ID") val id: String? = null,
+        val name: String? = null,
+        val poster: String? = null,
+        val banner: String? = null,
+        val overview: String? = null,
+        val genres: List<AniziumGenre>? = null,
+        val seasons: List<AniziumSeason>? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumGenre(val name: String? = null)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSeason(
+        val number: Int? = null,
+        val episodes: List<AniziumEpisodeItem>? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumEpisodeItem(
+        @JsonProperty("ID") val id: String? = null,
+        val name: String? = null,
+        val number: Int? = null,
+        val overview: String? = null,
+        @JsonProperty("banner_link") val bannerLink: String? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSourceResp(
+        val success: Boolean? = null,
+        val subtitles: List<AniziumSubtitle>? = null,
+        val groups: List<AniziumSourceGroup>? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSubtitle(
+        val group: String? = null,
+        val name: String? = null,
+        val link: String? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSourceGroup(
+        val group: String? = null,
+        val name: String? = null,
+        val items: List<AniziumSourceItem>? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSourceItem(
+        val quality: Int? = null,
+        val link: String? = null,
+        val type: String? = null
+    )
 
     private fun Element.toSearchResult(): SearchResponse? {
         val a = selectFirst("a") ?: return null
-        val title = selectFirst("div.title, h3, span.anime-title")?.text()?.trim()
-            ?: a.attr("title").takeIf { it.isNotBlank() } ?: return null
-        val url = fixUrlNull(a.attr("href")) ?: return null
-        val poster = fixUrlNull(
-            selectFirst("img")?.attr("data-src")?.takeIf { !it.contains("base64") }
-                ?: selectFirst("img")?.attr("src")
-        )
-        return newAnimeSearchResponse(title, url, TvType.Anime) {
-            this.posterUrl = poster
+        val href = fixUrlNull(a.attr("href")) ?: return null
+        val title = selectFirst("h3, h4, div.title, span.title")?.text()?.trim() ?: a.text().trim()
+        val img = selectFirst("img")?.attr("data-src") ?: selectFirst("img")?.attr("src")
+        return newAnimeSearchResponse(title, href, TvType.Anime) {
+            this.posterUrl = fixUrlNull(img)
         }
     }
 }

@@ -76,6 +76,7 @@ class InatBox : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val jsonResponse =
             makeInatRequest(request.data) ?: return newHomePageResponse(request.name, emptyList())
 
@@ -93,6 +94,7 @@ class InatBox : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         if (urlToSearchResponse.isEmpty()) {
             for (pageData in mainPage) {
                 val url = pageData.data
@@ -131,6 +133,7 @@ class InatBox : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val item = JSONObject(url)
 
         if (!inatContentAllowed(item)) {
@@ -168,6 +171,8 @@ class InatBox : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("InatBox", "data: $data")
         return try {
             if (data.startsWith("[")) {
@@ -224,11 +229,17 @@ class InatBox : MainAPI() {
                 for (j in 0 until episodeArray.length()) {
                     try {
                         val episodeItem = episodeArray.getJSONObject(j)
-                        val episodeName = episodeItem.getString("chName")
+                        val rawEpName = episodeItem.getString("chName").trim()
+                        val cleanEpTitle = rawEpName
+                            .replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                            .replace(Regex("""^Bölüm\s*\d+\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "")
+                            .trim()
+                        val finalName = cleanEpTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) && it != "${j + 1}" }
                         val episodePoster = episodeItem.getString("chImg")
                         episodes.getOrPut(DubStatus.None) { mutableListOf() }.add(
                             newEpisode(episodeItem.toString()) {
-                                this.name = episodeName
+                                this.name = finalName
                                 this.posterUrl = episodePoster
                                 this.season = i + 1
                                 this.episode = j + 1

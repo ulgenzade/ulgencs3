@@ -11,6 +11,21 @@ import org.jsoup.nodes.Element
 
 class FilmMakinesi : MainAPI() {
     override var mainUrl = "https://filmmakinesi.to"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["filmmakinesi"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name = "FilmMakinesi"
     override val hasMainPage = true
     override var lang = "tr"
@@ -28,6 +43,7 @@ class FilmMakinesi : MainAPI() {
         "${mainUrl}/tur/fantastik-fm1/film/" to "Fantastik"
     )
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val url = if (page == 1) request.data else "${request.data.removeSuffix("/")}/sayfa/$page/"
         val document = app.get(url).document
         val items = document.select("a.item")
@@ -36,6 +52,7 @@ class FilmMakinesi : MainAPI() {
         return newHomePageResponse(request.name, list, hasNext = hasNext)
     }
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.get("${mainUrl}/arama/?s=${query}").document
         return document.select("a.item").mapNotNull { it.toSearchResult() }
     }
@@ -64,6 +81,7 @@ class FilmMakinesi : MainAPI() {
         }
     }
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
         val title = document.selectFirst("h1.title")?.ownText()?.trim()
             ?.removeSuffix(" izle")
@@ -103,11 +121,13 @@ class FilmMakinesi : MainAPI() {
                     ?: Regex("""/bolum-(\d+)/""").find(epHref)?.groupValues?.get(1)?.toIntOrNull()
                     ?: return@forEach
 
+                val cleanName = epName.takeIf { it.isNotBlank() && !it.contains("Bölüm", ignoreCase = true) }
+
                 episodes.add(newEpisode(epHref) {
-                    this.name = epName.ifBlank { "$seasonNum. Sezon $epNum. Bölüm" }
+                    this.name = cleanName
                     this.season = seasonNum
                     this.episode = epNum
-                    this.description = epTitleText
+                    this.description = epTitleText.takeIf { it.isNotBlank() && it != cleanName }
                     this.posterUrl = poster  
                 })
             }
@@ -143,6 +163,8 @@ class FilmMakinesi : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d(name, "loadLinks çağrıldı, data: $data")
 
         val document = app.get(data, referer = mainUrl).document

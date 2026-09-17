@@ -18,6 +18,21 @@ private val jacksonMapper = ObjectMapper()
 
 class SelcukFlix : MainAPI() {
     override var mainUrl              = "https://selcukflix.com"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["selcukflix"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "SelcukFlix"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -92,6 +107,7 @@ class SelcukFlix : MainAPI() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val data  = request.data
         val items = mutableListOf<SearchResponse>()
 
@@ -136,6 +152,7 @@ class SelcukFlix : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val results = mutableListOf<SearchResponse>()
 
         try {
@@ -203,6 +220,7 @@ class SelcukFlix : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        ensureInit()
         val html     = app.get(url, interceptor = interceptor).text
         val isSeries = url.contains("/dizi/")
 
@@ -254,13 +272,21 @@ class SelcukFlix : MainAPI() {
                             val sNum = season.get("season_no")?.asInt() ?: return@forEach
                             season.get("episodes")?.forEach { ep: JsonNode ->
                                 val eNum   = ep.get("episode_no")?.asInt() ?: return@forEach
-                                val epText = ep.get("episode_text")?.asText()?.takeIf { it.isNotBlank() } ?: "Bölüm $eNum"
+                                val epText = ep.get("episode_text")?.asText()?.takeIf { it.isNotBlank() } ?: ""
+                                val epSubTitle = ep.get("episode_subtitle")?.asText()?.takeIf { it.isNotBlank() && it != "null" }
                                 val epSlug = ep.get("used_slug")?.asText() ?: return@forEach
                                 val epUrl  = fixUrl(epSlug)
+
+                                val cleanName = (epSubTitle ?: epText).replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                                val finalName = cleanName.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
+                                val epThumb = ep.get("face_url")?.asText()?.takeIf { it.isNotBlank() && it != "null" }
+                                    ?: ep.get("poster_url")?.asText()
+
                                 episodes.add(newEpisode(epUrl) {
-                                    this.name    = epText
-                                    this.season  = sNum
-                                    this.episode = eNum
+                                    this.name      = finalName
+                                    this.season    = sNum
+                                    this.episode   = eNum
+                                    this.posterUrl = fixPosterUrl(epThumb) ?: poster
                                 })
                             }
                         }
@@ -281,10 +307,13 @@ class SelcukFlix : MainAPI() {
                 val eMatch = Regex("/bolum-([0-9]+)").find(epUrl)
                 val sNum   = sMatch?.groupValues?.get(1)?.toIntOrNull() ?: return@forEach
                 val eNum   = eMatch?.groupValues?.get(1)?.toIntOrNull() ?: return@forEach
+                val cleanTitle = epTxt.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val finalName = cleanTitle.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
                 episodes.add(newEpisode(epUrl) {
-                    this.name    = epTxt
+                    this.name    = finalName
                     this.season  = sNum
                     this.episode = eNum
+                    this.posterUrl = poster
                 })
             }
         }
@@ -314,6 +343,8 @@ class SelcukFlix : MainAPI() {
         subtitleCallback : (SubtitleFile) -> Unit,
         callback         : (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         val html = app.get(data, interceptor = interceptor).text
 
         val secureDataRaw = extractSecureData(html) ?: return false

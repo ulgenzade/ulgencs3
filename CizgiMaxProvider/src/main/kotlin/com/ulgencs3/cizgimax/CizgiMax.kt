@@ -10,6 +10,21 @@ import org.jsoup.Jsoup
 
 class CizgiMax : MainAPI() {
     override var mainUrl              = "https://cizgimax.online"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["cizgimax"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "ÇizgiMax"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -23,6 +38,7 @@ class CizgiMax : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val requestUrl = if (page > 1) {
             val separator = if (request.data.contains("?")) "&" else "?"
             "${request.data.removeSuffix("/")}${separator}page=$page"
@@ -55,11 +71,13 @@ class CizgiMax : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.get("${mainUrl}/ara/?q=${query}").document
         return document.select("div.film-list div.film-item").mapNotNull { it.toSearchResult() }
     }
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val titleEl     = document.selectFirst("h1 a.anime-title-link") ?: document.selectFirst("h1")
@@ -83,12 +101,14 @@ class CizgiMax : MainAPI() {
 
             pane.select("a.ep-num-btn").forEach { element ->
                 val epHref = fixUrlNull(element.attr("href")) ?: return@forEach
-                val epName = element.attr("title")?.trim() ?: "Bölüm"
+                val rawName = element.attr("title")?.trim() ?: ""
+                val cleanName = rawName.replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val finalName = cleanName.takeIf { it.isNotBlank() && !it.equals("Bölüm", ignoreCase = true) }
                 val epEpisode = Regex("""\d+""").find(element.text())?.value?.toIntOrNull() ?: 1
 
                 episodes.add(
                     newEpisode(epHref) {
-                        this.name = epName
+                        this.name = finalName
                         this.season = season
                         this.episode = epEpisode
                     }
@@ -114,6 +134,8 @@ class CizgiMax : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("CZGM", "data » $data")
         val document = app.get(data).document
 

@@ -11,6 +11,21 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 class SinemaCX : MainAPI() {
     override var mainUrl              = "https://www.sinema.gg"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["sinemacx"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "SinemaCX"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -42,6 +57,7 @@ class SinemaCX : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val document = app.get("${request.data}${page}").document
         val home     = document.select("div.son div.frag-k, div.icerik div.frag-k").mapNotNull { it.toSearchResult() }
 
@@ -57,6 +73,7 @@ class SinemaCX : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.get("${mainUrl}/?s=${query}").document
 
         return document.select("div.icerik div.frag-k").mapNotNull { it.toSearchResult() }
@@ -65,6 +82,7 @@ class SinemaCX : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.f-bilgi h1")?.text()?.trim() ?: return null
@@ -93,6 +111,8 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+        ensureInit()
+        ensureInit()
     Log.d("SCX", "data » $data")
 
     // Sayfa ve ilk iframe'i al

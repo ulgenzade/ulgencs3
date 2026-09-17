@@ -11,6 +11,21 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 
 class JetFilmizle : MainAPI() {
     override var mainUrl              = "https://jetfilmizle.now"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["jetfilmizle"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "JetFilmizle"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -27,6 +42,7 @@ class JetFilmizle : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val baseUrl = request.data
         val urlpage = if (page == 1) baseUrl else "$baseUrl/page/$page"
         val document = app.get(urlpage).document
@@ -66,6 +82,7 @@ class JetFilmizle : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val document = app.post(
             "${mainUrl}/arama?q=",
             referer = "${mainUrl}/",
@@ -78,6 +95,7 @@ class JetFilmizle : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         // 1. Başlık: Artık h1.film-title içinde.
@@ -154,6 +172,8 @@ class JetFilmizle : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("JTF", "loadLinks » $data")
 
         val document = app.get(

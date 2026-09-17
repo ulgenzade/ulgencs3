@@ -16,6 +16,21 @@ import org.jsoup.nodes.Element
 
 class DiziBox : MainAPI() {
     override var mainUrl              = "https://www.dizibox.live"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["dizibox"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "DiziBox"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -71,6 +86,7 @@ class DiziBox : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val rawUrl = request.data
         val url = if (page == 1) {
             if (rawUrl.contains("?")) {
@@ -118,6 +134,7 @@ class DiziBox : MainAPI() {
     )
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val url      = "$mainUrl/wp-admin/admin-ajax.php?s=$query&action=dwls_search"
         val response = app.get(
             url,
@@ -142,6 +159,7 @@ class DiziBox : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         var document = app.get(
             url,
             cookies     = baseCookies,
@@ -193,13 +211,14 @@ class DiziBox : MainAPI() {
                 }
 
                 val sNum = Regex("""(\d+)\.? ?Sezon""").find(epRawTitle)?.groupValues?.get(1)?.toIntOrNull() ?: 1
-                val eNum = Regex("""(\d+)\.? ?Bölüm""").find(epRawTitle)?.groupValues?.get(1)?.toIntOrNull()
+                val epSpecialTitle = epElem.selectFirst("span.episode-title, span.title, div.entry-title")?.text()?.trim()
+                val epThumb = fixUrlNull(epElem.selectFirst("img")?.attr("src") ?: epElem.selectFirst("img")?.attr("data-src"))
 
                 episodeList.add(newEpisode(epHref) {
-                    this.name      = "Bölüm"
+                    this.name      = epSpecialTitle?.takeIf { it.isNotBlank() }
                     this.season    = sNum
                     this.episode   = eNum
-                    this.posterUrl = poster
+                    this.posterUrl = epThumb ?: poster
                     if (dateText != null) {
                         val parts = dateText.split(" ")
                         if (parts.size >= 3) {
@@ -230,6 +249,8 @@ class DiziBox : MainAPI() {
         subtitleCallback : (SubtitleFile) -> Unit,
         callback         : (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         val document = app.get(
             data,
             cookies     = baseCookies,

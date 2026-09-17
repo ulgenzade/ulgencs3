@@ -14,6 +14,21 @@ import okhttp3.*
 
 class SetFilmIzle : MainAPI() {
     override var mainUrl              = "https://www.setfilmizle.uk"
+
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get(
+                "https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json",
+                timeout = 5
+            ).text
+            AppUtils.parseJson<Map<String, String>>(config)["setfilmizle"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) { }
+    }
+
     override var name                 = "SetFilmIzle"
     override val hasMainPage          = true
     override var lang                 = "tr"
@@ -48,6 +63,7 @@ class SetFilmIzle : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         val document = app.get(request.data).document
         val home     = document.select("div.items article").mapNotNull { it.toMainPageResult() }
 
@@ -67,6 +83,7 @@ class SetFilmIzle : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        ensureInit()
         val mainPage = app.get(mainUrl).document
         val nonce    = Regex("""nonce: '(.*)'""").find(mainPage.html())?.groupValues?.get(1) ?: ""
         val search   = app.post(
@@ -98,6 +115,7 @@ class SetFilmIzle : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val document = app.get(url).document
 
         val title           = document.selectFirst("h1")?.text()?.substringBefore(" izle")?.trim() ?: return null
@@ -121,10 +139,17 @@ class SetFilmIzle : MainAPI() {
                 val epSeason  = epDetail.substringBefore(". Sezon").toIntOrNull()
                 val epEpisode = epDetail.split("Sezon ").last().substringBefore(". Bölüm").toIntOrNull()
 
+                val epCleanTitle = it.selectFirst("span.ep-title, span.name, div.title")?.text()?.trim()
+                    ?: epName.replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
+                             .replace(Regex("""^\s*\d+\.\s*Bölüm\s*[-–:]*\s*""", RegexOption.IGNORE_CASE), "").trim()
+                val finalName = epCleanTitle.takeIf { t -> t.isNotBlank() && !t.equals("Bölüm", ignoreCase = true) }
+                val epThumb = fixUrlNull(it.selectFirst("img")?.attr("src") ?: it.selectFirst("img")?.attr("data-src"))
+
                 newEpisode(epHref) {
-                    this.name    = epName
+                    this.name    = finalName
                     this.season  = epSeason
                     this.episode = epEpisode
+                    this.posterUrl = epThumb ?: poster
                 }
             }
 
@@ -197,6 +222,8 @@ class SetFilmIzle : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
+        ensureInit()
         Log.d("STF", "data » $data")
         val document = app.get(data).document
 

@@ -58,6 +58,17 @@ class Dizilla : MainAPI() {
 
     private val privateAESKey = "9bYMCNQiWsXIYFWYAu7EkdsSbmGBTyUI"
 
+    private var isInitialized = false
+    private suspend fun ensureInit() {
+        if (isInitialized) return
+        isInitialized = true
+        try {
+            val config = app.get("https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json", timeout = 5).text
+            com.lagradost.cloudstream3.utils.AppUtils.parseJson<Map<String, String>>(config)["dizilla"]
+                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+        } catch (_: Exception) {}
+    }
+
     class CloudflareInterceptor(private val cloudflareKiller: CloudflareKiller): Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val request  = chain.request()
@@ -92,6 +103,7 @@ class Dizilla : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        ensureInit()
         return try {
             println("Dizilla DEBUG - getMainPage: ${request.data}, page: $page")
 
@@ -357,6 +369,7 @@ class Dizilla : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun load(url: String): LoadResponse? {
+        ensureInit()
         val mainReq = app.get(url, interceptor = interceptor)
         val document = mainReq.document
         val title = document.selectFirst("div.poster.poster h2")?.text() ?: return null
@@ -380,9 +393,17 @@ class Dizilla : MainAPI() {
             val sezonDoc = sezonReq.document
             val episodes = sezonDoc.select("div.episodes")
             for (bolum in episodes.select("div.cursor-pointer")) {
-                val epName = bolum.select("a").last()?.text() ?: continue
+                val rawEpName = bolum.select("a").last()?.text() ?: continue
                 val epHref = fixUrlNull(bolum.select("a").last()?.attr("href")) ?: continue
                 val epEpisode = bolum.selectFirst("a")?.text()?.trim()?.toIntOrNull()
+                
+                // "1. 1. Bölüm" çiftlemesini önlemek için: Eğer sadece "1. Bölüm" ise özel ad null bırakılır
+                // Özel bir başlık varsa (örn: "Pilot") o isim kullanılır
+                val cleanTitle = rawEpName.replace(Regex("""^\d+\.\s*Bölüm\s*[-–:]*\s*"""), "").trim()
+                val epName = if (cleanTitle.isNotBlank() && !cleanTitle.equals("Bölüm", ignoreCase = true)) {
+                    cleanTitle
+                } else null
+
                 val newEpisode = newEpisode(epHref) {
                     this.name = epName
                     this.season = season
@@ -401,12 +422,25 @@ class Dizilla : MainAPI() {
         }
     }
 
+    data class PichiveSource(
+        val file: String? = null,
+        val title: String? = null,
+        val type: String? = null
+    )
+    data class PichivePlaylistItem(
+        val sources: List<PichiveSource>? = null
+    )
+    data class PichiveResponse(
+        val playlist: List<PichivePlaylistItem>? = null
+    )
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        ensureInit()
         val document = app.get(data, interceptor = interceptor).document
         val script = document.selectFirst("script#__NEXT_DATA__")?.data() ?: return false
 
@@ -428,24 +462,18 @@ class Dizilla : MainAPI() {
 
             var linkFound = false
 
-            // 1. JSON Kurallarını ezip geçiyoruz!
-            // Ham string içinde "source_content":"..." kalıbını bulan Regex.
-            // İçerideki kaçış karakterli tırnakları (\") sorunsuz tolere eder.
             val contentRegex = Regex(""""source_content"\s*:\s*"((?:[^"\\]|\\.)*)"""")
             val matches = contentRegex.findAll(decodedData)
 
             matches.forEach { match ->
-                // 2. Regex ile yakalanan string'i JSON kaçış karakterlerinden temizle
                 val rawHtml = match.groupValues[1]
                     .replace("\\\"", "\"")
                     .replace("\\/", "/")
                     .replace("\\\\", "\\")
 
-                // 3. Temizlenmiş HTML ( <iframe src="//..." ) içinden Jsoup ile src'yi al
                 if (rawHtml.contains("iframe", ignoreCase = true)) {
                     var iframeUrl = Jsoup.parse(rawHtml).select("iframe").attr("src")
 
-                    // Protokol düzeltmesi
                     if (iframeUrl.startsWith("//")) {
                         iframeUrl = "https:$iframeUrl"
                     }
@@ -453,15 +481,67 @@ class Dizilla : MainAPI() {
                     val finalUrl = fixUrlNull(iframeUrl)
 
                     if (!finalUrl.isNullOrEmpty()) {
-                        Log.d("DizillaDebug", "BİNGO! Regex ile Kırık Veriden Alınan Link: $finalUrl")
-                        loadExtractor(finalUrl, "$mainUrl/", subtitleCallback, callback)
-                        linkFound = true
+                        Log.d("DizillaDebug", "BİNGO! Iframe link: $finalUrl")
+                        
+                        // Pichive Player çözücüsü (403 ve 3002 manifest malformed hatasını çözer)
+                        if (finalUrl.contains("pichive.online")) {
+                            val pichiveHtml = runCatching {
+                                app.get(finalUrl, headers = mapOf("Referer" to "$mainUrl/")).text
+                            }.getOrNull()
+
+                            if (!pichiveHtml.isNullOrEmpty()) {
+                                val token = Regex("""openPlayer\s*\(\s*['"]([^'"]+)['"]""").find(pichiveHtml)?.groupValues?.get(1)
+                                if (!token.isNullOrEmpty()) {
+                                    val sourceUrl = "https://four.pichive.online/source2.php?v=$token"
+                                    val res = runCatching {
+                                        app.get(
+                                            sourceUrl,
+                                            headers = mapOf(
+                                                "Referer" to finalUrl,
+                                                "X-Requested-With" to "XMLHttpRequest"
+                                            )
+                                        ).parsedSafe<PichiveResponse>()
+                                    }.getOrNull()
+
+                                    res?.playlist?.forEach { item ->
+                                        item.sources?.forEach { src ->
+                                            val m3u8 = src.file?.replace("m.php", "master.m3u8") ?: return@forEach
+                                            callback(
+                                                newExtractorLink(
+                                                    source = "Dizilla - Pichive",
+                                                    name = "Dizilla [${src.title ?: "Orijinal"}]",
+                                                    url = m3u8,
+                                                    type = ExtractorLinkType.M3U8
+                                                ) {
+                                                    this.headers = mapOf(
+                                                        "Referer" to finalUrl,
+                                                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                                                    )
+                                                }
+                                            )
+                                            linkFound = true
+                                        }
+                                    }
+                                }
+
+                                // Altyazıları çek
+                                val subMatches = Regex("""['"]file['"]:\s*['"]([^'"]+\.vtt[^'"]*)['"].*?['"]label['"]:\s*['"]([^'"]+)['"]""").findAll(pichiveHtml)
+                                subMatches.forEach { sm ->
+                                    val subUrl = sm.groupValues[1]
+                                    val subLabel = sm.groupValues[2]
+                                    subtitleCallback(newSubtitleFile(subLabel, subUrl))
+                                }
+                            }
+                        } else {
+                            loadExtractor(finalUrl, "$mainUrl/", subtitleCallback, callback)
+                            linkFound = true
+                        }
                     }
                 }
             }
 
             if (!linkFound) {
-                Log.e("DizillaDebug", "HATA: Regex taraması link bulamadı. Ham Veri: ${decodedData.take(500)}")
+                Log.e("DizillaDebug", "HATA: Link bulunamadı.")
             }
 
             linkFound
