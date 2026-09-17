@@ -135,19 +135,7 @@ class SezonlukDizi : MainAPI() {
                 val iframe = fixUrlNull(iframeSrc) ?: continue
                 Log.d("SZD", "dil»1 | iframe » $iframe")
 
-                loadExtractor(iframe, "${mainUrl}/", subtitleCallback) { link ->
-                    callback.invoke(
-                        newExtractorLink(
-                            source = "AltYazı - ${veri.baslik}",
-                            name = "AltYazı - ${veri.baslik}",
-                            url = link.url,
-                            type = link.type
-                        ) {
-                            this.quality = link.quality
-                            this.headers = link.headers
-                        }
-                    )
-                }
+                loadExtractor(iframe, "${mainUrl}/", subtitleCallback, callback)
             }
         }
 
@@ -175,19 +163,7 @@ class SezonlukDizi : MainAPI() {
                 val iframe = fixUrlNull(iframeSrc) ?: continue
                 Log.d("SZD", "dil»0 | iframe » $iframe")
 
-                loadExtractor(iframe, "${mainUrl}/", subtitleCallback) { link ->
-                    callback.invoke(
-                        newExtractorLink(
-                            source = "Dublaj - ${veri.baslik}",
-                            name = "Dublaj - ${veri.baslik}",
-                            url = link.url,
-                            type = link.type
-                        ) {
-                            this.quality = link.quality
-                            this.headers = link.headers
-                        }
-                    )
-                }
+                loadExtractor(iframe, "${mainUrl}/", subtitleCallback, callback)
             }
         }
 
