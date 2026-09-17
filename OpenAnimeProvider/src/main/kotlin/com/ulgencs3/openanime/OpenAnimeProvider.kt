@@ -184,9 +184,20 @@ class OpenAnimeProvider : MainAPI() {
         } catch (_: Exception) {
             val doc = app.get(url, headers = commonHeaders).document
             val t = doc.selectFirst("h1, h2.anime-title")?.text()?.trim() ?: "Bilinmeyen Anime"
+            val fallbackEpisodes = doc.select("ul.episodes li a, div.episode-list a, a[href*='/anime/$slug/']").mapNotNull { el ->
+                val epHref = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
+                val epText = el.text().trim()
+                val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
+                newEpisode(epHref) {
+                    name = epText.ifBlank { "Bölüm $epNum" }
+                    episode = epNum
+                    season = 1
+                }
+            }.distinctBy { it.data }
             return newAnimeLoadResponse(t, url, TvType.Anime) {
                 this.posterUrl = fixUrlNull(doc.selectFirst("img.cover, div.poster img")?.attr("src"))
                 this.plot = doc.selectFirst("div.desc, p.description")?.text()?.trim()
+                addEpisodes(DubStatus.Subbed, fallbackEpisodes)
             }
         }
 

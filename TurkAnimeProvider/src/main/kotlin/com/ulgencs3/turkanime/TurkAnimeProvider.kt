@@ -51,19 +51,20 @@ class TurkAnimeProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "$mainUrl/anime-turu/1/Aksiyon"          to "Aksiyon",
-        "$mainUrl/anime-turu/2/Macera"           to "Macera",
-        "$mainUrl/anime-turu/4/Komedi"           to "Komedi",
-        "$mainUrl/anime-turu/8/Dram"             to "Dram",
-        "$mainUrl/anime-turu/10/Fantastik"       to "Fantastik",
-        "$mainUrl/anime-turu/24/Bilim_Kurgu"     to "Bilim Kurgu",
-        "$mainUrl/anime-turu/22/Romantizm"       to "Romantizm",
-        "$mainUrl/anime-turu/27/Shounen"         to "Shounen"
+        "/anime-turu/1/Aksiyon"          to "Aksiyon",
+        "/anime-turu/2/Macera"           to "Macera",
+        "/anime-turu/4/Komedi"           to "Komedi",
+        "/anime-turu/8/Dram"             to "Dram",
+        "/anime-turu/10/Fantastik"       to "Fantastik",
+        "/anime-turu/24/Bilim_Kurgu"     to "Bilim Kurgu",
+        "/anime-turu/22/Romantizm"       to "Romantizm",
+        "/anime-turu/27/Shounen"         to "Shounen"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val doc = app.get(request.data, headers = commonHeaders).document
+        val targetUrl = if (request.data.startsWith("http")) request.data else "$mainUrl${request.data}"
+        val doc = app.get(targetUrl, headers = commonHeaders).document
         val home = doc.select("div#orta-icerik div.panel, div.panel-visible").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -185,6 +186,28 @@ class TurkAnimeProvider : MainAPI() {
     ): Boolean {
         ensureInit()
         val doc = app.get(data, headers = commonHeaders, cookies = mapOf("yasOnay" to "1")).document
+
+        // 1. Önce doğrudan sayfadaki ArtPlayer M3U8 akışı kontrolü (Hızlı Oynatma)
+        val mainDataUrl = doc.selectFirst("div.artplayer-app")?.attr("data-url")
+        if (!mainDataUrl.isNullOrBlank()) {
+            callback(
+                newExtractorLink(
+                    name = "$name [M3U8]",
+                    source = name,
+                    url = mainDataUrl,
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    quality = Qualities.P1080.value
+                    headers = mapOf("Referer" to data)
+                }
+            )
+        }
+
+        // 2. Doğrudan sayfadaki varsayılan iframe kontrolü
+        val defaultPageIframe = doc.selectFirst("iframe")?.attr("src")
+        if (!defaultPageIframe.isNullOrBlank() && !defaultPageIframe.contains("a-ads.com")) {
+            resolveAndLoadPlayer(defaultPageIframe, data, subtitleCallback, callback)
+        }
 
         // Sayfadaki Fansub (Fandom) ve alternatif oynatıcı butonlarını topla
         val fansubButtons = doc.select("button[onclick*='IndexIcerik'], button[onclick*='ajax/videosec']")

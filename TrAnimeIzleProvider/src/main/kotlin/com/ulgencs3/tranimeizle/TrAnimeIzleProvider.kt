@@ -48,14 +48,15 @@ class TrAnimeIzleProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "$mainUrl/anime-listesi?sayfa=" to "Tüm Animeler",
-        "$mainUrl/?filtre=yeni&sayfa="  to "Yeni Eklenenler",
-        "$mainUrl/?filtre=popular&sayfa=" to "Popüler Animeler"
+        "/anime-listesi?sayfa="   to "Tüm Animeler",
+        "/?filtre=yeni&sayfa="    to "Yeni Eklenenler",
+        "/?filtre=popular&sayfa=" to "Popüler Animeler"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val doc = app.get("${request.data}$page", headers = commonHeaders).document
+        val targetUrl = if (request.data.startsWith("http")) "${request.data}$page" else "$mainUrl${request.data}$page"
+        val doc = app.get(targetUrl, headers = commonHeaders).document
         val items = doc.select("div.anime-card, li.anime-item, div.movie-item, div.item")
             .mapNotNull { it.toSearchResult() }
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
@@ -95,7 +96,7 @@ class TrAnimeIzleProvider : MainAPI() {
         val description = doc.selectFirst("div.anime-desc, p.description, div.ozet")?.text()?.trim()
         val tags = doc.select("a[href*='tur'], a[href*='genre'], div.genres a").map { it.text().trim() }
 
-        val episodes = doc.select("div.episode-list a, ul.bolumler li a, div.bolum-list a, a[href*='-bolum']").mapNotNull { el ->
+        val rawEpisodes = doc.select("div.episode-list a, ul.bolumler li a, div.bolum-list a, a[href*='-bolum']").mapNotNull { el ->
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
             val epText = el.text().trim()
             val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
@@ -104,7 +105,13 @@ class TrAnimeIzleProvider : MainAPI() {
                 episode = epNum
                 season = 1
             }
-        }.reversed()
+        }.distinctBy { it.data }
+
+        val episodes = if (rawEpisodes.any { (it.episode ?: 0) > 0 }) {
+            rawEpisodes.sortedBy { it.episode ?: 0 }
+        } else {
+            rawEpisodes.reversed()
+        }
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             this.posterUrl = poster

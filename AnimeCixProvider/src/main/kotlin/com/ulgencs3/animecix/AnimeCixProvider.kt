@@ -50,16 +50,17 @@ class AnimeCixProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "$mainUrl/secure/last-episodes"                          to "Son Eklenen Bölümler",
-        "$mainUrl/secure/titles?type=series&onlyStreamable=true" to "Seriler",
-        "$mainUrl/secure/titles?type=movie&onlyStreamable=true"  to "Filmler"
+        "/secure/last-episodes"                          to "Son Eklenen Bölümler",
+        "/secure/titles?type=series&onlyStreamable=true" to "Seriler",
+        "/secure/titles?type=movie&onlyStreamable=true"  to "Filmler"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val targetPath = if (request.data.startsWith("http")) request.data else "$mainUrl${request.data}"
         return if (request.data.contains("/last-episodes")) {
             val response = app.get(
-                "$mainUrl/secure/last-episodes?page=$page&perPage=10",
+                "$targetPath?page=$page&perPage=10",
                 headers = authHeaders
             ).parsedSafe<LastEpisodesResponse>()?.data ?: emptyList()
 
@@ -76,8 +77,9 @@ class AnimeCixProvider : MainAPI() {
 
             newHomePageResponse(request.name, home)
         } else {
+            val sep = if (targetPath.contains("?")) "&" else "?"
             val response = app.get(
-                "${request.data}&page=$page&perPage=16",
+                "$targetPath${sep}page=$page&perPage=16",
                 headers = authHeaders
             ).parsedSafe<Category>()
 

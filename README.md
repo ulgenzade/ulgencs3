@@ -12,14 +12,17 @@ https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/repo.json
 
 ## 🎌 Desteklenen Platformlar
 
-| Eklenti | Site | Özellik |
-|---|---|---|
-| TurkAnimeProvider | turkanime.tv | Çok embed, Türkçe altyazı/dublaj |
-| AnimeCixProvider | animecix.tv | REST API, kalite seçimi |
-| AnizmProvider | anizm.net | Türkçe altyazı |
-| AniziumProvider | anizium.co | **4K desteği**, Türkçe dublaj |
-| OpenAnimeProvider | openani.me | Next.js API tabanlı |
-| TrAnimeIzleProvider | tranimeizle.io | Türkçe altyazı |
+| Eklenti | Tür | Site | Özellik |
+|---|---|---|---|
+| **TurkAnimeProvider** | Anime | turkanime.tv | Tüm Fansub/fandomlar, ArtPlayer M3U8, AES decrypt |
+| **AnimeCixProvider** | Anime | animecix.tv | REST API, TauVideo çoklu kalite (1080p-360p) |
+| **AnizmProvider** | Anime | anizm.net | Cloudflare Turnstile bypass, çoklu gömülü oynatıcı |
+| **AniziumProvider** | Anime | anizium.co | **4K Ultra HD desteği**, alternatif oynatıcılar |
+| **OpenAnimeProvider** | Anime | openani.me | Next.js API & DOM fallback, doğrudan HLS akışları |
+| **TrAnimeIzleProvider** | Anime | tranimeizle.io | Çoklu alternatif sunucular ve altyazı desteği |
+| **FilmModuProvider** | Film | filmmodu.one | Yüksek hızlı doğrudan M3U8 akışları, Türkçe altyazı |
+| **HDFilmCehennemiProvider** | Film/Dizi | hdfilmcehennemi.nl | Devasa arşiv, IMDB 7+, deobfuscation çözücü |
+| **DiziPalProvider** | Dizi/Film | dizipal2132.com | Netflix/Exxen/BluTV/Gain platformları, Imagestoo API |
 
 ## 🛠️ Geliştirme
 

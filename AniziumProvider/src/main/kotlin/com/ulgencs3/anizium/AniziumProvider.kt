@@ -116,7 +116,7 @@ class AniziumProvider : MainAPI() {
         val has4K = doc.selectFirst("span.quality-badge, div.quality")
             ?.text()?.contains("4K", ignoreCase = true) == true
 
-        val episodes = doc.select("div.episode-list a, ul.bolumler li a, a[href*='bolum']").mapNotNull { el ->
+        val rawEpisodes = doc.select("div.episode-list a, ul.bolumler li a, a[href*='bolum']").mapNotNull { el ->
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
             val epText = el.text().trim()
             val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
@@ -125,7 +125,13 @@ class AniziumProvider : MainAPI() {
                 episode = epNum
                 season = 1
             }
-        }.reversed()
+        }.distinctBy { it.data }
+
+        val episodes = if (rawEpisodes.any { (it.episode ?: 0) > 0 }) {
+            rawEpisodes.sortedBy { it.episode ?: 0 }
+        } else {
+            rawEpisodes.reversed()
+        }
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             this.posterUrl = poster

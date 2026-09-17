@@ -64,14 +64,15 @@ class AnizmProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "$mainUrl/anime-listesi/?filtre=yeni-eklenenler&sayfa=" to "Yeni Eklenenler",
-        "$mainUrl/anime-listesi/?filtre=puan&sayfa="           to "En Yüksek Puanlılar",
-        "$mainUrl/anime-listesi/?filtre=izlenme&sayfa="        to "En Çok İzlenenler"
+        "/anime-listesi/?filtre=yeni-eklenenler&sayfa=" to "Yeni Eklenenler",
+        "/anime-listesi/?filtre=puan&sayfa="           to "En Yüksek Puanlılar",
+        "/anime-listesi/?filtre=izlenme&sayfa="        to "En Çok İzlenenler"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val doc = app.get("${request.data}$page", headers = commonHeaders, interceptor = cfInterceptor).document
+        val targetUrl = if (request.data.startsWith("http")) "${request.data}$page" else "$mainUrl${request.data}$page"
+        val doc = app.get(targetUrl, headers = commonHeaders, interceptor = cfInterceptor).document
         val items = doc.select("div.animeCard, li.listItem, div.poster-item").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
     }
@@ -108,16 +109,23 @@ class AnizmProvider : MainAPI() {
         val description = doc.selectFirst("p.animeDesc, div.animeDescription, div.summary")?.text()?.trim()
         val tags = doc.select("div.animeGenres a, span.genre, a[href*='tur']").map { it.text().trim() }
 
-        val episodes = doc.select("ul.episodeList li a, div.episodeItem a, a[href*='-bolum']").mapNotNull { el ->
-            val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
-            val epText = el.text().trim()
-            val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
-            newEpisode(epUrl) {
-                name = epText.ifBlank { "Bölüm $epNum" }
-                episode = epNum
-                season = 1
-            }
-        }.reversed()
+        val rawEpisodes = doc.select("ul.episodeList li a, div.episodeItem a, a[href*='-bolum'], div.bolumler a, ul.bolum-listesi li a")
+            .mapNotNull { el ->
+                val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
+                val epText = el.text().trim()
+                val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
+                newEpisode(epUrl) {
+                    name = epText.ifBlank { "Bölüm $epNum" }
+                    episode = epNum
+                    season = 1
+                }
+            }.distinctBy { it.data }
+
+        val episodes = if (rawEpisodes.any { (it.episode ?: 0) > 0 }) {
+            rawEpisodes.sortedBy { it.episode ?: 0 }
+        } else {
+            rawEpisodes.reversed()
+        }
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             this.posterUrl = poster

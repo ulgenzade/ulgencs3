@@ -42,6 +42,24 @@ def generate_plugins_json(builds_dir, repo_slug="ulgenzade/ulgencs3"):
             "description": "TrAnimeİzle arşivi. Çoklu alternatif sunucu ve harici oynatıcı desteği.",
             "tvTypes": ["Anime", "AnimeMovie", "OVA"],
             "iconUrl": "https://www.tranimeizle.io/favicon.ico"
+        },
+        "FilmModuProvider": {
+            "name": "FilmModu",
+            "description": "Türkçe Dublaj ve Altyazılı Full HD Film platformu. Doğrudan yüksek hızlı M3U8 video akışı ve Türkçe altyazı desteği.",
+            "tvTypes": ["Movie"],
+            "iconUrl": "https://www.filmmodu.one/favicon.ico"
+        },
+        "HDFilmCehennemiProvider": {
+            "name": "HDFilmCehennemi",
+            "description": "Türkiye'nin en büyük film ve yabancı dizi arşivi. IMDB 7+ filmler, popüler diziler ve alternatif sunucular.",
+            "tvTypes": ["Movie", "TvSeries"],
+            "iconUrl": "https://www.hdfilmcehennemi.nl/favicon.ico"
+        },
+        "DiziPalProvider": {
+            "name": "DiziPal",
+            "description": "DiziPal güncel yerli/yabancı dizi ve film arşivi. Netflix, Exxen, BluTV, Disney+, Prime Video platform içerikleri.",
+            "tvTypes": ["TvSeries", "Movie"],
+            "iconUrl": "https://dizipal2132.com/favicon.ico"
         }
     }
 
