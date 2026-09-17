@@ -95,6 +95,7 @@ class Sinewix : MainAPI() {
         return if (type == TvType.TvSeries || type == TvType.Anime) {
             val episodes = it.seasons?.flatMap { season ->
                 season.episodes?.map { episode ->
+                val videoLink = episode.videos?.firstOrNull()?.link
                 val rawEpName = episode.name?.trim() ?: ""
                 val cleanEpTitle = rawEpName
                     .replace(Regex("""^\s*\d+\.\s*Sezon\s*""", RegexOption.IGNORE_CASE), "")
