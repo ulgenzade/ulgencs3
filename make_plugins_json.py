@@ -60,6 +60,120 @@ def generate_plugins_json(builds_dir, repo_slug="ulgenzade/ulgencs3"):
             "description": "DiziPal güncel yerli/yabancı dizi ve film arşivi. Netflix, Exxen, BluTV, Disney+, Prime Video platform içerikleri.",
             "tvTypes": ["TvSeries", "Movie"],
             "iconUrl": "https://dizipal2132.com/favicon.ico"
+        },
+        "DiziBoxProvider": {
+            "name": "DiziBox",
+            "description": "Türkiye'nin en popüler yabancı dizi arşivi. Güncel bölümler, Türkçe altyazı ve dublaj seçenekleri.",
+            "tvTypes": ["TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=dizibox.live&sz=128"
+        },
+        "DizillaProvider": {
+            "name": "Dizilla",
+            "description": "Yabancı ve yerli popüler diziler, yüksek hızlı alternatif oynatıcılar ve kesintisiz akış.",
+            "tvTypes": ["TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=dizilla.club&sz=128"
+        },
+        "SezonlukDiziProvider": {
+            "name": "SezonlukDizi",
+            "description": "Tüm sezon ve bölümlerin eksiksiz yer aldığı zengin yabancı dizi arşivi.",
+            "tvTypes": ["TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=sezonlukdizi5.com&sz=128"
+        },
+        "DiziMomProvider": {
+            "name": "DiziMom",
+            "description": "Yabancı diziler, animasyonlar ve çizgi diziler.",
+            "tvTypes": ["TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=dizimom.tv&sz=128"
+        },
+        "FilmMakinesiProvider": {
+            "name": "FilmMakinesi",
+            "description": "1080p Türkçe dublaj ve altyazılı film ve yabancı dizi platformu.",
+            "tvTypes": ["Movie", "TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=filmmakinesi.pw&sz=128"
+        },
+        "FullHDFilmizleseneProvider": {
+            "name": "FullHDFilmizlesene",
+            "description": "Türkiye'nin en büyük ve en köklü Full HD film arşivi.",
+            "tvTypes": ["Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=fullhdfilmizlesene.pw&sz=128"
+        },
+        "InatBoxProvider": {
+            "name": "InatBox",
+            "description": "Canlı televizyon kanalları, spor, belgesel ve sinema yayınları.",
+            "tvTypes": ["Live", "TvSeries", "Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=inatbox.cfd&sz=128"
+        },
+        "RecTVProvider": {
+            "name": "RecTV",
+            "description": "Canlı TV kanalları, canlı spor müsabakaları, dizi ve sinema filmleri.",
+            "tvTypes": ["Live", "TvSeries", "Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=rectv.me&sz=128"
+        },
+        "SelcukFlixProvider": {
+            "name": "SelcukFlix",
+            "description": "Film, dizi ve canlı spor yayın platformu.",
+            "tvTypes": ["Live", "TvSeries", "Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=selcuksportshd.com&sz=128"
+        },
+        "WebteIzleProvider": {
+            "name": "WebteIzle",
+            "description": "Yüksek kaliteli film arşivi, Türkçe dublaj ve altyazı desteği.",
+            "tvTypes": ["Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=webteizle.vip&sz=128"
+        },
+        "CizgiMaxProvider": {
+            "name": "CizgiMax",
+            "description": "Nostaljik ve güncel çizgi filmler ve animasyon dizileri.",
+            "tvTypes": ["TvSeries", "Anime"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=cizgimax.online&sz=128"
+        },
+        "BelgeselXProvider": {
+            "name": "BelgeselX",
+            "description": "Türkçe dublajlı ve altyazılı zengin belgesel arşivi.",
+            "tvTypes": ["Documentary", "TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=belgeselx.com&sz=128"
+        },
+        "DdiziProvider": {
+            "name": "Ddizi",
+            "description": "Klasik ve güncel yerli Türk dizileri arşivi.",
+            "tvTypes": ["TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=ddizi.pro&sz=128"
+        },
+        "DiziKoreaProvider": {
+            "name": "DiziKorea",
+            "description": "Kore dizileri (K-Drama) ve Asya yapımları.",
+            "tvTypes": ["AsianDrama", "TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=dizikorea.com&sz=128"
+        },
+        "JetFilmizleProvider": {
+            "name": "JetFilmizle",
+            "description": "Güncel sinema filmleri, Türkçe dublaj ve altyazı desteği.",
+            "tvTypes": ["Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=jetfilmizle.mobi&sz=128"
+        },
+        "KultFilmlerProvider": {
+            "name": "Kült Filmler",
+            "description": "IMDb yüksek puanlı kült filmler ve sinema başyapıtları.",
+            "tvTypes": ["Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=kultfilmler.com&sz=128"
+        },
+        "SetFilmIzleProvider": {
+            "name": "SetFilmİzle",
+            "description": "Yüksek hızlı film ve yabancı dizi izleme platformu.",
+            "tvTypes": ["Movie", "TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=setfilmizle.vip&sz=128"
+        },
+        "SinemaCXProvider": {
+            "name": "SinemaCX",
+            "description": "Sinema filmleri ve popüler yabancı yapımlar.",
+            "tvTypes": ["Movie"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=sinemacx.com&sz=128"
+        },
+        "SinewixProvider": {
+            "name": "SineWix",
+            "description": "Full HD film ve dizi izleme arşivi.",
+            "tvTypes": ["Movie", "TvSeries"],
+            "iconUrl": "https://www.google.com/s2/favicons?domain=sinewix.com&sz=128"
         }
     }
 

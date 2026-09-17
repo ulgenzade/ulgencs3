@@ -251,10 +251,14 @@ class AnimeCixProvider : MainAPI() {
 
                 sezonResponse?.videos?.forEach { video ->
                     val epUrl = video.url?.takeIf { it.isNotBlank() } ?: return@forEach
+                    val epTitle = video.name?.takeIf { it.isNotBlank() }
+                        ?: "${video.seasonNum ?: sezon.number}. Sezon ${video.episodeNum ?: 1}. Bölüm"
                     episodes.add(newEpisode(epUrl) {
-                        this.name = "${video.seasonNum ?: sezon.number}. Sezon ${video.episodeNum ?: 1}. Bölüm"
+                        this.name = epTitle
                         this.season = video.seasonNum ?: sezon.number
                         this.episode = video.episodeNum ?: 1
+                        this.description = video.description?.takeIf { it.isNotBlank() }
+                        this.posterUrl = fixUrlNull(video.thumbnail)
                     })
                 }
             }

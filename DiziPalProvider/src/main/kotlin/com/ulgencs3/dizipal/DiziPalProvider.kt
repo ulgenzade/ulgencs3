@@ -44,20 +44,17 @@ class DiziPalProvider : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
+        "/"                      to "Son Eklenenler",
         "/bolumler"              to "Son Bölümler",
-        "/diziler"               to "Yeni Diziler",
-        "/filmler"               to "Yeni Filmler",
+        "/diziler"               to "Diziler",
+        "/filmler"               to "Filmler",
         "/platform/netflix"      to "Netflix",
         "/platform/exxen"        to "Exxen",
         "/platform/blutv"        to "BluTV",
         "/platform/disney-plus"  to "Disney+",
         "/platform/prime-video"  to "Amazon Prime",
         "/platform/tabii"        to "Tabii",
-        "/platform/gain"         to "Gain",
-        "/platform/max"          to "Max",
-        "/kategori/bilim-kurgu"  to "Bilim Kurgu Filmleri",
-        "/kategori/komedi"       to "Komedi Filmleri",
-        "/kategori/belgesel"     to "Belgesel Filmleri"
+        "/platform/gain"         to "Gain"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -65,20 +62,30 @@ class DiziPalProvider : MainAPI() {
         val targetUrl = if (request.data.startsWith("http")) request.data else "$mainUrl${request.data}"
         val doc = app.get(targetUrl, headers = commonHeaders).document
         val home = if (request.data.contains("/bolumler")) {
-            doc.select("div.episodes-list-grid > a.episode-list-item").mapNotNull { it.toSonBolumler() }
+            val items = doc.select("div.episodes-list-grid a, div.latest-episodes-section a, a.episode-list-item")
+                .mapNotNull { it.toSonBolumler() }
+            if (items.isEmpty()) {
+                doc.select("div.content-card, a.content-card, div.trending-item, a[href*='/dizi/'], a[href*='/film/']")
+                    .mapNotNull { it.toDiziler() }
+            } else items
         } else {
-            doc.select("ul.content-grid > li").mapNotNull { it.toDiziler() }
+            doc.select("div.content-card, a.content-card, div.trending-item, div.content-grid > div, ul.content-grid > li, a[href*='/dizi/'], a[href*='/film/']")
+                .mapNotNull { it.toDiziler() }
         }
 
-        return newHomePageResponse(request.name, home, hasNext = false)
+        return newHomePageResponse(HomePageList(request.name, home), hasNext = home.isNotEmpty())
     }
 
     private fun Element.toSonBolumler(): SearchResponse? {
-        val name = selectFirst(".ep-title")?.text()?.trim() ?: return null
+        val name = selectFirst(".ep-title")?.text()?.trim()
+            ?: selectFirst(".card-title")?.text()?.trim()
+            ?: selectFirst("h3")?.text()?.trim()
+            ?: return null
         val episode = selectFirst(".ep-info")?.text()?.trim()?.replace(". Sezon ", "x")?.replace(". Bölüm", "") ?: ""
         val title = if (episode.isNotBlank()) "$name $episode" else name
 
-        val href = fixUrlNull(attr("href")) ?: return null
+        val a = if (tagName() == "a") this else selectFirst("a") ?: return null
+        val href = fixUrlNull(a.attr("href")) ?: return null
         val imgEl = selectFirst("img")
         val posterUrl = fixUrlNull(imgEl?.attr("data-src")?.ifEmpty { imgEl.attr("src") })
 
@@ -92,11 +99,27 @@ class DiziPalProvider : MainAPI() {
     }
 
     private fun Element.toDiziler(): SearchResponse? {
-        val title = selectFirst("div.card-info h3")?.text()?.trim() ?: return null
-        val href = fixUrlNull(selectFirst("a")?.attr("href")) ?: return null
-        val posterUrl = fixUrlNull(selectFirst("img")?.attr("data-src"))
+        val a = if (tagName() == "a") this else selectFirst("a") ?: return null
+        val title = selectFirst("div.card-title")?.text()?.trim()
+            ?: selectFirst("div.card-info h3")?.text()?.trim()
+            ?: selectFirst("h3")?.text()?.trim()
+            ?: selectFirst(".title")?.text()?.trim()
+            ?: a.attr("title").takeIf { it.isNotBlank() }
+            ?: a.text().trim().takeIf { it.isNotBlank() }
+            ?: return null
 
-        return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+        val href = fixUrlNull(a.attr("href")) ?: return null
+        val img = selectFirst("img")
+        val posterUrl = fixUrlNull(
+            img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                ?: img?.attr("src")?.takeIf { it.isNotBlank() }
+                ?: img?.attr("data-original")
+        )
+
+        val isMovie = href.contains("/film/")
+        val type = if (isMovie) TvType.Movie else TvType.TvSeries
+
+        return newTvSeriesSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
         }
     }

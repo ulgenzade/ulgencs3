@@ -69,40 +69,45 @@ class HDFilmCehennemiProvider : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "/load/page/sayfano/home/"                      to "Yeni Eklenen Filmler",
-        "/load/page/sayfano/home-series/"               to "Yeni Eklenen Diziler",
-        "/load/page/sayfano/categories/tavsiye-filmler-izle3/" to "Tavsiye Filmler",
-        "/load/page/sayfano/imdb7/"                     to "IMDB 7+ Filmler",
-        "/load/page/sayfano/mostCommented/"             to "En Çok Yorumlananlar",
-        "/load/page/sayfano/mostLiked/"                 to "En Çok Beğenilenler"
+        "/sayfa/SAYFA/"                              to "Son Eklenen Filmler",
+        "/category/film-izle-2/sayfa/SAYFA/"          to "Filmler",
+        "/yabancidiziizle-5/sayfa/SAYFA/"             to "Yabancı Diziler",
+        "/tur/aksiyon-filmleri-izle/sayfa/SAYFA/"     to "Aksiyon",
+        "/tur/bilim-kurgu-filmleri-izle/sayfa/SAYFA/" to "Bilim Kurgu",
+        "/tur/komedi-filmleri-izle/sayfa/SAYFA/"      to "Komedi"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val path = request.data.replace("sayfano", page.toString())
+        val path = request.data.replace("SAYFA", page.toString()).replace("sayfano", page.toString())
         val targetUrl = if (path.startsWith("http")) path else "$mainUrl$path"
         val resp = app.get(targetUrl, headers = commonHeaders, referer = "$mainUrl/", interceptor = interceptor)
         val text = resp.text
 
-        if (!text.contains("Sayfa Bulunamadı")) {
-            val hdfc = AppUtils.tryParseJson<HDFC>(text)
-            val html = hdfc?.html ?: text
-            val document = Jsoup.parse(html, mainUrl)
-            val home = document.select("a").mapNotNull { it.toSearchResult() }
-            return newHomePageResponse(request.name, home)
-        }
-        return newHomePageResponse(request.name, emptyList())
+        val hdfc = AppUtils.tryParseJson<HDFC>(text)
+        val html = hdfc?.html ?: text
+        val document = Jsoup.parse(html, mainUrl)
+        val home = document.select("div.poster, div.mini-poster, div.poster-wrapper, a.poster, div.card").mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(HomePageList(request.name, home), hasNext = home.isNotEmpty())
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.attr("title").takeIf { it.isNotBlank() } ?: selectFirst("h4")?.text()?.trim() ?: return null
-        val href = fixUrlNull(this.attr("href")) ?: return null
+        val a = if (tagName() == "a") this else selectFirst("a") ?: return null
+        val title = selectFirst("h2, h3, h4, .poster-title, .mini-poster-title")?.text()?.trim()
+            ?: a.attr("title").takeIf { it.isNotBlank() }
+            ?: a.text().trim().takeIf { it.isNotBlank() }
+            ?: return null
+        val href = fixUrlNull(a.attr("href")) ?: return null
+        val img = selectFirst("img")
         val posterUrl = fixUrlNull(
-            selectFirst("img")?.attr("data-src")
-                ?: selectFirst("img")?.attr("src")
+            img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                ?: img?.attr("src")?.takeIf { it.isNotBlank() }
         )
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        val isSeries = href.contains("dizi")
+        val type = if (isSeries) TvType.TvSeries else TvType.Movie
+
+        return newMovieSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
         }
     }

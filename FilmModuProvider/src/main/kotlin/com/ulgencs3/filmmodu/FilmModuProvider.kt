@@ -43,36 +43,33 @@ class FilmModuProvider : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "/hd-film-kategori/4k-film-izle"         to "4K",
-        "/hd-film-kategori/aile-filmleri"        to "Aile",
-        "/hd-film-kategori/aksiyon"              to "Aksiyon",
-        "/hd-film-kategori/animasyon"            to "Animasyon",
+        "/"                                     to "Son Eklenen Filmler",
+        "/hd-populer-filmler"                   to "Popüler Filmler",
+        "/boxset-seri-filmler"                  to "Seri Filmler",
+        "/arsiv-filmler"                        to "Film Arşivi",
         "/hd-film-kategori/bilim-kurgu-filmleri" to "Bilim-Kurgu",
-        "/hd-film-kategori/dram-filmleri"        to "Dram",
-        "/hd-film-kategori/fantastik-filmler"    to "Fantastik",
-        "/hd-film-kategori/gerilim"              to "Gerilim",
-        "/hd-film-kategori/gizem-filmleri"       to "Gizem",
-        "/hd-film-kategori/hd-komedi-filmleri"   to "Komedi",
+        "/hd-film-kategori/aksiyon"              to "Aksiyon",
+        "/hd-film-kategori/komedi-filmleri"     to "Komedi",
         "/hd-film-kategori/korku-filmleri"       to "Korku",
-        "/hd-film-kategori/kult-filmler-izle"    to "Kült Filmler",
-        "/hd-film-kategori/macera-filmleri"      to "Macera",
-        "/hd-film-kategori/odullu-filmler-izle"  to "Oscar Ödüllü",
-        "/hd-film-kategori/romantik-filmler"     to "Romantik",
-        "/hd-film-kategori/suc-filmleri"         to "Suç",
-        "/hd-film-kategori/tavsiye-filmler"      to "Tavsiye Filmler"
+        "/hd-film-kategori/animasyon"            to "Animasyon"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
         val targetUrl = if (request.data.startsWith("http")) request.data else "$mainUrl${request.data}"
-        val doc = app.get("$targetUrl?page=$page", headers = commonHeaders).document
-        val home = doc.select("div.movie").mapNotNull { it.toMainPageResult() }
-        return newHomePageResponse(request.name, home)
+        val sep = if (targetUrl.contains("?")) "&" else "?"
+        val doc = app.get("$targetUrl${sep}page=$page", headers = commonHeaders).document
+        val home = doc.select("div.movie, div.movie-large, div.poster, div.col-md-2, div.hover-box, a[href*='/film/']")
+            .mapNotNull { it.toMainPageResult() }
+        return newHomePageResponse(HomePageList(request.name, home), hasNext = home.isNotEmpty())
     }
 
     private fun Element.toMainPageResult(): SearchResponse? {
-        val a = selectFirst("a") ?: return null
-        val title = a.text().trim().takeIf { it.isNotBlank() } ?: a.attr("title").takeIf { it.isNotBlank() } ?: return null
+        val a = if (tagName() == "a") this else selectFirst("a") ?: return null
+        val title = a.attr("title").takeIf { it.isNotBlank() }
+            ?: selectFirst(".movie-title, .title, h3, h2")?.text()?.trim()
+            ?: a.text().trim().takeIf { it.isNotBlank() }
+            ?: return null
         val href = fixUrlNull(a.attr("href")) ?: return null
         val posterUrl = fixUrlNull(
             selectFirst("picture img")?.attr("data-src")

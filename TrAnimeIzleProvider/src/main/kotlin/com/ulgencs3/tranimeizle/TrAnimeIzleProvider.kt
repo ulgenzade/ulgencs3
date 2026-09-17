@@ -48,8 +48,8 @@ class TrAnimeIzleProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
+        "/?filtre=yeni&sayfa="    to "Son Eklenenler",
         "/anime-listesi?sayfa="   to "Tüm Animeler",
-        "/?filtre=yeni&sayfa="    to "Yeni Eklenenler",
         "/?filtre=popular&sayfa=" to "Popüler Animeler"
     )
 

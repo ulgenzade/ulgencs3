@@ -1,0 +1,12 @@
+package com.ulgencs3.setfilmizle
+
+import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.Plugin
+import android.content.Context
+
+@CloudstreamPlugin
+class SetFilmIzlePlugin : Plugin() {
+    override fun load(context: Context) {
+        registerMainAPI(SetFilmIzle())
+    }
+}
