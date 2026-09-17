@@ -36,8 +36,8 @@ import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
+import org.json.JSONObject
+import com.lagradost.cloudstream3.utils.Qualities
 
 
 class Dizilla : MainAPI() {
@@ -64,8 +64,8 @@ class Dizilla : MainAPI() {
         isInitialized = true
         try {
             val config = app.get("https://raw.githubusercontent.com/ulgenzade/ulgencs3/master/domains.json", timeout = 5).text
-            com.lagradost.cloudstream3.utils.org.json.JSONObject(config).optString("dizilla")
-                ?.takeIf { it.isNotBlank() }?.let { mainUrl = it }
+            JSONObject(config).optString("dizilla")
+                .takeIf { it.isNotBlank() }?.let { mainUrl = it }
         } catch (_: Exception) {}
     }
 
@@ -507,17 +507,14 @@ class Dizilla : MainAPI() {
                                         item.sources?.forEach { src ->
                                             val m3u8 = src.file?.replace("m.php", "master.m3u8") ?: return@forEach
                                             callback(
-                                                newExtractorLink(
+                                                ExtractorLink(
                                                     source = "Dizilla - Pichive",
                                                     name = "Dizilla [${src.title ?: "Orijinal"}]",
                                                     url = m3u8,
-                                                    type = ExtractorLinkType.M3U8
-                                                ) {
-                                                    this.headers = mapOf(
-                                                        "Referer" to finalUrl,
-                                                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-                                                    )
-                                                }
+                                                    referer = finalUrl,
+                                                    quality = Qualities.Unknown.value,
+                                                    isM3u8 = true
+                                                )
                                             )
                                             linkFound = true
                                         }
@@ -529,7 +526,7 @@ class Dizilla : MainAPI() {
                                 subMatches.forEach { sm ->
                                     val subUrl = sm.groupValues[1]
                                     val subLabel = sm.groupValues[2]
-                                    subtitleCallback(newSubtitleFile(subLabel, subUrl))
+                                    subtitleCallback(SubtitleFile(subLabel, subUrl))
                                 }
                             }
                         } else {
