@@ -6,7 +6,7 @@
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnimeCixProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 34801,
+    "fileSize": 35456,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -63,13 +63,130 @@
     "iconUrl": "https://anizm.net/favicon.ico"
   },
   {
+    "name": "BelgeselX",
+    "internalName": "BelgeselXProvider",
+    "pluginClassName": "com.ulgencs3.belgeselx.BelgeselXPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/BelgeselXProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 26628,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Documentary",
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Türkçe dublajlı ve altyazılı zengin belgesel arşivi.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=belgeselx.com&sz=128"
+  },
+  {
+    "name": "CizgiMax",
+    "internalName": "CizgiMaxProvider",
+    "pluginClassName": "com.ulgencs3.cizgimax.CizgiMaxPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/CizgiMaxProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 29593,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries",
+      "Anime"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Nostaljik ve güncel çizgi filmler ve animasyon dizileri.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=cizgimax.online&sz=128"
+  },
+  {
+    "name": "Ddizi",
+    "internalName": "DdiziProvider",
+    "pluginClassName": "com.ulgencs3.ddizi.DDiziPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DdiziProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 18099,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Klasik ve güncel yerli Türk dizileri arşivi.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=ddizi.pro&sz=128"
+  },
+  {
+    "name": "DiziBox",
+    "internalName": "DiziBoxProvider",
+    "pluginClassName": "com.ulgencs3.dizibox.DiziBoxPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziBoxProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 26982,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Türkiye'nin en popüler yabancı dizi arşivi. Güncel bölümler, Türkçe altyazı ve dublaj seçenekleri.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=dizibox.live&sz=128"
+  },
+  {
+    "name": "DiziKorea",
+    "internalName": "DiziKoreaProvider",
+    "pluginClassName": "com.ulgencs3.dizikorea.DiziKoreaPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziKoreaProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 21703,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "AsianDrama",
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Kore dizileri (K-Drama) ve Asya yapımları.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=dizikorea.com&sz=128"
+  },
+  {
+    "name": "DiziMom",
+    "internalName": "DiziMomProvider",
+    "pluginClassName": "com.ulgencs3.dizimom.DiziMomPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziMomProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 31113,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Yabancı diziler, animasyonlar ve çizgi diziler.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=dizimom.tv&sz=128"
+  },
+  {
     "name": "DiziPal",
     "internalName": "DiziPalProvider",
     "pluginClassName": "com.ulgencs3.dizipal.DiziPalPlugin",
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziPalProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 22772,
+    "fileSize": 23325,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -83,13 +200,52 @@
     "iconUrl": "https://dizipal2132.com/favicon.ico"
   },
   {
+    "name": "Dizilla",
+    "internalName": "DizillaProvider",
+    "pluginClassName": "com.ulgencs3.dizilla.DizillaPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DizillaProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 32417,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Yabancı ve yerli popüler diziler, yüksek hızlı alternatif oynatıcılar ve kesintisiz akış.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=dizilla.club&sz=128"
+  },
+  {
+    "name": "FilmMakinesi",
+    "internalName": "FilmMakinesiProvider",
+    "pluginClassName": "com.ulgencs3.filmmakinesi.FilmMakinesiPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FilmMakinesiProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 30184,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "1080p Türkçe dublaj ve altyazılı film ve yabancı dizi platformu.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=filmmakinesi.pw&sz=128"
+  },
+  {
     "name": "FilmModu",
     "internalName": "FilmModuProvider",
     "pluginClassName": "com.ulgencs3.filmmodu.FilmModuPlugin",
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FilmModuProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 17172,
+    "fileSize": 17211,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -102,13 +258,32 @@
     "iconUrl": "https://www.filmmodu.one/favicon.ico"
   },
   {
+    "name": "FullHDFilmizlesene",
+    "internalName": "FullHDFilmizleseneProvider",
+    "pluginClassName": "com.ulgencs3.fullhdfilmizlesene.FullHDFilmizlesenePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FullHDFilmizleseneProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 34155,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Türkiye'nin en büyük ve en köklü Full HD film arşivi.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=fullhdfilmizlesene.pw&sz=128"
+  },
+  {
     "name": "HDFilmCehennemi",
     "internalName": "HDFilmCehennemiProvider",
     "pluginClassName": "com.ulgencs3.hdfilmcehennemi.HDFilmCehennemiPlugin",
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/HDFilmCehennemiProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 28193,
+    "fileSize": 28563,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -120,6 +295,65 @@
     ],
     "description": "Türkiye'nin en büyük film ve yabancı dizi arşivi. IMDB 7+ filmler, popüler diziler ve alternatif sunucular.",
     "iconUrl": "https://www.hdfilmcehennemi.nl/favicon.ico"
+  },
+  {
+    "name": "InatBox",
+    "internalName": "InatBoxProvider",
+    "pluginClassName": "com.ulgencs3.inatbox.InatBoxPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/InatBoxProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 32387,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Live",
+      "TvSeries",
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Canlı televizyon kanalları, spor, belgesel ve sinema yayınları.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=inatbox.cfd&sz=128"
+  },
+  {
+    "name": "JetFilmizle",
+    "internalName": "JetFilmizleProvider",
+    "pluginClassName": "com.ulgencs3.jetfilmizle.JetFilmizlePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/JetFilmizleProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 17194,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Güncel sinema filmleri, Türkçe dublaj ve altyazı desteği.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=jetfilmizle.mobi&sz=128"
+  },
+  {
+    "name": "Kült Filmler",
+    "internalName": "KultFilmlerProvider",
+    "pluginClassName": "com.ulgencs3.kultfilmler.KultFilmlerPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/KultFilmlerProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 24024,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "IMDb yüksek puanlı kült filmler ve sinema başyapıtları.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=kultfilmler.com&sz=128"
   },
   {
     "name": "OpenAnime",
@@ -143,13 +377,133 @@
     "iconUrl": "https://openani.me/favicon.ico"
   },
   {
+    "name": "RecTV",
+    "internalName": "RecTVProvider",
+    "pluginClassName": "com.ulgencs3.rectv.RecTVPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/RecTVProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 26535,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Live",
+      "TvSeries",
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Canlı TV kanalları, canlı spor müsabakaları, dizi ve sinema filmleri.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=rectv.me&sz=128"
+  },
+  {
+    "name": "SelcukFlix",
+    "internalName": "SelcukFlixProvider",
+    "pluginClassName": "com.ulgencs3.selcukflix.SelcukFlixPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SelcukFlixProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 31504,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Live",
+      "TvSeries",
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Film, dizi ve canlı spor yayın platformu.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=selcuksportshd.com&sz=128"
+  },
+  {
+    "name": "SetFilmİzle",
+    "internalName": "SetFilmIzleProvider",
+    "pluginClassName": "com.ulgencs3.setfilmizle.SetFilmIzlePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SetFilmIzleProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 22581,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Yüksek hızlı film ve yabancı dizi izleme platformu.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=setfilmizle.vip&sz=128"
+  },
+  {
+    "name": "SezonlukDizi",
+    "internalName": "SezonlukDiziProvider",
+    "pluginClassName": "com.ulgencs3.sezonlukdizi.SezonlukDiziPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SezonlukDiziProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 17444,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Tüm sezon ve bölümlerin eksiksiz yer aldığı zengin yabancı dizi arşivi.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=sezonlukdizi5.com&sz=128"
+  },
+  {
+    "name": "SinemaCX",
+    "internalName": "SinemaCXProvider",
+    "pluginClassName": "com.ulgencs3.sinemacx.SinemaCXPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SinemaCXProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 14634,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Sinema filmleri ve popüler yabancı yapımlar.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=sinemacx.com&sz=128"
+  },
+  {
+    "name": "SineWix",
+    "internalName": "SinewixProvider",
+    "pluginClassName": "com.ulgencs3.sinewix.SinewixPlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SinewixProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 25131,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Full HD film ve dizi izleme arşivi.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=sinewix.com&sz=128"
+  },
+  {
     "name": "TrAnimeİzle",
     "internalName": "TrAnimeIzleProvider",
     "pluginClassName": "com.ulgencs3.tranimeizle.TrAnimeIzlePlugin",
     "version": 1,
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TrAnimeIzleProvider.cs3",
     "apiVersion": 1,
-    "fileSize": 16558,
+    "fileSize": 16557,
     "status": 1,
     "language": "tr",
     "tvTypes": [
@@ -183,5 +537,24 @@
     ],
     "description": "Türkiye'nin en büyük anime arşivi. Tüm fandom/çeviri grupları (AniSekai, Benihime, PuzzleSubs vb.) ve tüm medya oynatıcıları (Sibnet, OK.ru, Mail.ru, Doodstream, VOE, Vudea, M3U8 vb.) desteklenir.",
     "iconUrl": "https://www.turkanime.tv/imajlar/favicon.ico"
+  },
+  {
+    "name": "WebteIzle",
+    "internalName": "WebteIzleProvider",
+    "pluginClassName": "com.ulgencs3.webteizle.WebteIzlePlugin",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/WebteIzleProvider.cs3",
+    "apiVersion": 1,
+    "fileSize": 21497,
+    "status": 1,
+    "language": "tr",
+    "tvTypes": [
+      "Movie"
+    ],
+    "authors": [
+      "ulgenzade"
+    ],
+    "description": "Yüksek kaliteli film arşivi, Türkçe dublaj ve altyazı desteği.",
+    "iconUrl": "https://www.google.com/s2/favicons?domain=webteizle.vip&sz=128"
   }
 ]
