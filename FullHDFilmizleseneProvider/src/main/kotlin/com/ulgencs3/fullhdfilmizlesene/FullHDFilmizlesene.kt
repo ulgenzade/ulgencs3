@@ -86,7 +86,7 @@ class FullHDFilmizlesene : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("arama/${query}").document
+        val document = app.get("$mainUrl/arama/${query}").document
 
         return document.select("li.film").mapNotNull { it.toSearchResult() }
     }

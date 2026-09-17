@@ -72,7 +72,7 @@ class CizgiMax : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("ara/?q=${query}").document
+        val document = app.get("$mainUrl/ara/?q=${query}").document
         return document.select("div.film-list div.film-item").mapNotNull { it.toSearchResult() }
     }
 

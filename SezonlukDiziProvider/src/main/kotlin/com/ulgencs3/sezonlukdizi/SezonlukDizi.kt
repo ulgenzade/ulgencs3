@@ -81,13 +81,13 @@ class SezonlukDizi : MainAPI() {
 
         val endpoint    = url.split("/").last()
 
-        val actorsReq  = app.get("oyuncular/${endpoint}").document
+        val actorsReq  = app.get("$mainUrl/oyuncular/${endpoint}").document
         val actors     = actorsReq.select("div.doubling div.ui").mapNotNull {
             val actorName = it.selectFirst("div.header")?.text()?.trim() ?: return@mapNotNull null
             Actor(actorName, fixUrlNull(it.selectFirst("img")?.attr("src")))
         }
 
-        val episodesReq = app.get("bolumler/${endpoint}").document
+        val episodesReq = app.get("$mainUrl/bolumler/${endpoint}").document
         val episodes    = mutableListOf<Episode>()
         for (sezon in episodesReq.select("table.unstackable")) {
             for (bolum in sezon.select("tbody tr")) {

@@ -107,7 +107,8 @@ class WebteIzle : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val url = if ("SAYFA" in request.data) request.data.replace("SAYFA", "$page") else "${request.data}$page"
+        val rawPath = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
+        val url = if ("SAYFA" in rawPath) rawPath.replace("SAYFA", "$page") else "${rawPath}$page"
         val document = app.get(url).document
         val home = document.select("div.golgever").mapNotNull { it.toSearchResult() }
 
@@ -128,7 +129,7 @@ class WebteIzle : MainAPI() {
         val query = URLEncoder.encode(query, "ISO-8859-9")
 
         val document = app.get(
-            "filtre?a=${query}",
+            "$mainUrl/filtre?a=${query}",
             referer = "${mainUrl}/",
             interceptor = interceptor
         ).document

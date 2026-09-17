@@ -54,7 +54,7 @@ class FilmMakinesi : MainAPI() {
     }
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val document = app.get("arama/?s=${query}").document
+        val document = app.get("$mainUrl/arama/?s=${query}").document
         return document.select("a.item").mapNotNull { it.toSearchResult() }
     }
     private fun Element.toSearchResult(): SearchResponse? {
