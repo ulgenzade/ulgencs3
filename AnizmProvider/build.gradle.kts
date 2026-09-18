@@ -2,7 +2,7 @@ import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 
 fun Project.cloudstream(configuration: CloudstreamExtension.() -> Unit) = extensions.getByName<CloudstreamExtension>("cloudstream").configuration()
 
-version = 2
+version = 3
 
 cloudstream {
     authors = listOf("ulgenzade")
