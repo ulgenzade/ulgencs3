@@ -15,7 +15,7 @@ Telefonunuzdan doğrudan aşağıdaki butona dokunun, CloudStream açılıp depo
 CloudStream uygulamasında **Eklentiler → + Depo Ekle** alanına sadece şu kısa kodu yazın:
 
 ```text
-!UlgenCs3
+!UlgenCs3 / !ulgencs3
 ```
 *(Not: Başındaki `!` işareti, Türkiye'de engelli olan cutt.ly yerine doğrudan açık olan py.md servisini kullanmasını sağlar).*
 
