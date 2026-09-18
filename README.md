@@ -4,17 +4,35 @@ Türkçe anime, dizi, film, belgesel ve çizgi dizi platformları için CloudStr
 
 ## 📦 Depoyu CloudStream'e Eklemek
 
-CloudStream uygulamasında **Ayarlar → Eklentiler → Depo Ekle** (veya `+ Depo Ekle`) bölümüne aşağıdaki bağlantıyı yapıştırın:
+### Yöntem 1: Tek Tıkla Otomatik Ekle (En Kolay)
+Telefonunuzdan doğrudan aşağıdaki butona dokunun, CloudStream açılıp depoyu otomatik yükleyecektir:
+
+👉 **[📲 Depoyu CloudStream'e Otomatik Ekle](https://recloudstream.github.io/http-protocol-redirector?r=cloudstreamrepo://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/repo.json)**
+
+---
+
+### Yöntem 2: Kısa Kod (TV ve Kumanda İçin)
+CloudStream uygulamasında **Eklentiler → + Depo Ekle** alanına sadece şu kısa kodu yazın:
 
 ```text
-https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/repo.json
+!UlgenCs3
 ```
+*(Not: Başındaki `!` işareti, Türkiye'de engelli olan cutt.ly yerine doğrudan açık olan py.md servisini kullanmasını sağlar).*
 
-> **Not (VPN / Bağlantı Uyarısı Alanlar İçin):**  
-> Türkiye'deki bazı servis sağlayıcılarında (Turkcell Superonline, TTNET vb.) `raw.githubusercontent.com` erişimi kısıtlanmış olabilir. Eğer *"Depo bulunamadı"* uyarısı alırsanız VPN açabilir veya **VPN gerektirmeyen CDN bağlantısını** kullanabilirsiniz:
-> ```text
-> https://fastly.jsdelivr.net/gh/ulgenzade/ulgencs3@builds/repo.json
-> ```
+---
+
+### Yöntem 3: Doğrudan URL ile Ekleme
+Eğer tam URL yapıştırmak isterseniz:
+
+* **CDN Bağlantısı (Türkiye ISS'leri için Önerilen - VPN Gerektirmez):**
+  ```text
+  https://fastly.jsdelivr.net/gh/ulgenzade/ulgencs3@builds/repo.json
+  ```
+* **GitHub Doğrudan:**
+  ```text
+  https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/repo.json
+  ```
+
 
 ## 🎌 Anime Platformları (6 Eklenti)
 
