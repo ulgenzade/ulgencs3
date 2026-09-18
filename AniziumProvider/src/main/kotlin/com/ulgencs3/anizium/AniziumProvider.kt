@@ -83,8 +83,9 @@ class AniziumProvider : MainAPI() {
 
     override val mainPage = mainPageOf(
         "last-added" to "Son Eklenen Bölümler",
-        "popular"    to "Popüler Animeler",
         "4k"         to "4K Ultra HD Animeler",
+        "dub"        to "Türkçe Dublaj Animeler",
+        "popular"    to "Popüler Animeler",
         "action"     to "Aksiyon Animeleri",
         "comedy"     to "Komedi Animeleri",
         "drama"      to "Dram Animeleri",
@@ -117,11 +118,24 @@ class AniziumProvider : MainAPI() {
                 app.get("$apiHost/page/home", headers = getApiHeaders()).parsedSafe<AniziumHomeResp>()
             }.getOrNull()
 
+            val allPool = mutableListOf<AniziumItem>()
+            res?.settlementTop?.let { allPool.addAll(it) }
+            res?.settlementMiddle?.let { allPool.addAll(it) }
+            res?.settlementLower?.let { allPool.addAll(it) }
+
             val list = when (request.data) {
-                "4k" -> res?.settlementTop?.filter { it.quality?.contains("4k", ignoreCase = true) == true }
-                "popular" -> res?.settlementTop
-                else -> res?.settlementMiddle ?: res?.settlementTop
-            } ?: emptyList()
+                "4k" -> allPool.filter { it.quality?.contains("4k", ignoreCase = true) == true }
+                "dub" -> allPool.filter {
+                    it.genre?.any { g -> g.name?.contains("Dublaj", ignoreCase = true) == true } == true ||
+                    it.soundGroup?.any { s -> s.value?.contains("dub", ignoreCase = true) == true } == true
+                }
+                "popular" -> res?.settlementTop ?: allPool
+                "action" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Aksiyon", ignoreCase = true) == true } == true }
+                "comedy" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Komedi", ignoreCase = true) == true } == true }
+                "drama" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Dram", ignoreCase = true) == true } == true }
+                "romance" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Romantizm", ignoreCase = true) == true } == true }
+                else -> allPool
+            }.distinctBy { it.id }
 
             list.forEach { item ->
                 val id = item.id ?: return@forEach
@@ -292,11 +306,12 @@ class AniziumProvider : MainAPI() {
                             480  -> Qualities.P480.value
                             else -> Qualities.Unknown.value
                         }
+                        val qLabel = if (q >= 2160) "4K (2160p)" else "${q}p"
 
                         callback(
                             newExtractorLink(
                                 source = name,
-                                name = "$name [$grpName - ${q}p]",
+                                name = "$name [$grpName - $qLabel]",
                                 url = link,
                                 type = if (link.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                             ) {
@@ -348,7 +363,8 @@ class AniziumProvider : MainAPI() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class AniziumHomeResp(
         @JsonProperty("settlement_top") val settlementTop: List<AniziumItem>? = null,
-        @JsonProperty("settlement_middle") val settlementMiddle: List<AniziumItem>? = null
+        @JsonProperty("settlement_middle") val settlementMiddle: List<AniziumItem>? = null,
+        @JsonProperty("settlement_lower") val settlementLower: List<AniziumItem>? = null
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -362,7 +378,15 @@ class AniziumProvider : MainAPI() {
         val banner: String? = null,
         val quality: String? = null,
         val episode: Int? = null,
-        val overview: String? = null
+        val overview: String? = null,
+        val genre: List<AniziumGenre>? = null,
+        @JsonProperty("sound_group") val soundGroup: List<AniziumSoundGroupItem>? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSoundGroupItem(
+        val name: String? = null,
+        val value: String? = null
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
