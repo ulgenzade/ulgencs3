@@ -1,0 +1,8 @@
+{
+  "name": "UlgenCS3",
+  "description": "Türkçe Anime Eklentileri — Anime, Dizi ve Film",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/plugins.json"
+  ]
+}
