@@ -82,20 +82,38 @@ class AniziumProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
-        "last-added" to "Son Eklenen Bölümler",
-        "4k"         to "4K Ultra HD Animeler",
-        "dub"        to "Türkçe Dublaj Animeler",
-        "popular"    to "Popüler Animeler",
-        "action"     to "Aksiyon Animeleri",
-        "comedy"     to "Komedi Animeleri",
-        "drama"      to "Dram Animeleri",
-        "romance"    to "Romantizm Animeleri"
+        "last-added"          to "Son Eklenen Bölümler",
+        "popular"             to "Popüler Animeler",
+        "featured"            to "Editörün Seçtikleri",
+        "special"             to "Özel Seçki Animeler",
+        "4k"                  to "4K Ultra HD Animeler",
+        "genre:66407"         to "Türkçe Dublaj Animeler",
+        "genre:94032"         to "Shounen",
+        "genre:62263"         to "Aksiyon",
+        "genre:5263"          to "Macera",
+        "genre:43261"         to "Fantastik",
+        "genre:82742"         to "Büyü ve Kılıç",
+        "genre:90158"         to "Bilim Kurgu",
+        "genre:59624"         to "Romantizm",
+        "genre:47450"         to "Komedi",
+        "genre:57282"         to "Dram",
+        "genre:23813"         to "Isekai",
+        "genre:11860"         to "Doğaüstü",
+        "genre:78746"         to "Gizem & Dedektif",
+        "genre:57593"         to "Gerilim & Psikolojik",
+        "genre:87910"         to "Seinen",
+        "genre:88689"         to "Dövüş Sanatları",
+        "genre:84484"         to "Ödüllü Animeler",
+        "genre:19214"         to "Süper Güçler",
+        "genre:47202"         to "Yaşamdan Kesitler",
+        "genre:73505"         to "Okul",
+        "genre:15055"         to "Çoklu Altyazı"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val pageUrl = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val items = mutableListOf<SearchResponse>()
+        var hasNext = false
 
         if (request.data == "last-added") {
             val res = runCatching {
@@ -113,6 +131,23 @@ class AniziumProvider : MainAPI() {
                     addDubStatus(DubStatus.Subbed, epNum)
                 })
             }
+            hasNext = (res?.page?.nextPage != null) || (items.size >= 10)
+        } else if (request.data.startsWith("genre:")) {
+            val genreId = request.data.removePrefix("genre:")
+            val res = runCatching {
+                app.get("$apiHost/page/catalog?id=$genreId&type=genre&page=$page", headers = getApiHeaders())
+                    .parsedSafe<AniziumSearchResp>()
+            }.getOrNull()
+
+            res?.page?.data?.forEach { item ->
+                val id = item.id ?: return@forEach
+                val title = item.name ?: return@forEach
+                val poster = item.poster ?: item.banner
+                items.add(newAnimeSearchResponse(title, "$mainUrl/anime/$id", TvType.Anime) {
+                    this.posterUrl = fixUrlNull(poster)
+                })
+            }
+            hasNext = (res?.page?.nextPage != null) || (items.size >= 10)
         } else {
             val res = runCatching {
                 app.get("$apiHost/page/home", headers = getApiHeaders()).parsedSafe<AniziumHomeResp>()
@@ -122,19 +157,14 @@ class AniziumProvider : MainAPI() {
             res?.settlementTop?.let { allPool.addAll(it) }
             res?.settlementMiddle?.let { allPool.addAll(it) }
             res?.settlementLower?.let { allPool.addAll(it) }
+            res?.specialList?.let { allPool.addAll(it) }
 
             val list = when (request.data) {
-                "4k" -> allPool.filter { it.quality?.contains("4k", ignoreCase = true) == true }
-                "dub" -> allPool.filter {
-                    it.genre?.any { g -> g.name?.contains("Dublaj", ignoreCase = true) == true } == true ||
-                    it.soundGroup?.any { s -> s.value?.contains("dub", ignoreCase = true) == true } == true
-                }
-                "popular" -> res?.settlementTop ?: allPool
-                "action" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Aksiyon", ignoreCase = true) == true } == true }
-                "comedy" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Komedi", ignoreCase = true) == true } == true }
-                "drama" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Dram", ignoreCase = true) == true } == true }
-                "romance" -> allPool.filter { it.genre?.any { g -> g.name?.contains("Romantizm", ignoreCase = true) == true } == true }
-                else -> allPool
+                "popular"  -> res?.settlementTop ?: allPool
+                "featured" -> res?.settlementMiddle ?: allPool
+                "special"  -> res?.specialList ?: allPool
+                "4k"       -> allPool.filter { it.quality?.contains("4k", ignoreCase = true) == true }
+                else       -> allPool
             }.distinctBy { it.id }
 
             list.forEach { item ->
@@ -145,10 +175,11 @@ class AniziumProvider : MainAPI() {
                     this.posterUrl = fixUrlNull(poster)
                 })
             }
+            hasNext = false
         }
 
         // API boş dönerse DOM fallback
-        if (items.isEmpty()) {
+        if (items.isEmpty() && page == 1) {
             val doc = runCatching {
                 app.get("$mainUrl/anime-listesi?sayfa=$page", headers = getApiHeaders()).document
             }.getOrNull()
@@ -158,7 +189,7 @@ class AniziumProvider : MainAPI() {
             }
         }
 
-        return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
+        return newHomePageResponse(HomePageList(request.name, items), hasNext = hasNext)
     }
 
     // -------------------------------------------------------------------------
@@ -167,27 +198,38 @@ class AniziumProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         ensureInit()
-        val res = runCatching {
-            app.get("$apiHost/page/search?q=${query.encodeUrl()}", headers = getApiHeaders())
-                .parsedSafe<AniziumSearchResp>()
-        }.getOrNull()
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return emptyList()
 
-        if (res?.data != null && res.data.isNotEmpty()) {
-            return res.data.mapNotNull { item ->
+        // 1. Resmi API Araması (?value=...&page=1)
+        val apiResults = runCatching {
+            val resp = app.get(
+                "$apiHost/page/search?value=${trimmed.encodeUrl()}&page=1",
+                headers = getApiHeaders()
+            ).parsedSafe<AniziumSearchResp>()
+
+            val items = resp?.page?.data ?: resp?.data
+            items?.mapNotNull { item ->
                 val id = item.id ?: return@mapNotNull null
                 val title = item.name ?: return@mapNotNull null
+                val poster = item.poster ?: item.banner
                 newAnimeSearchResponse(title, "$mainUrl/anime/$id", TvType.Anime) {
-                    this.posterUrl = fixUrlNull(item.poster ?: item.banner)
+                    this.posterUrl = fixUrlNull(poster)
                 }
             }
-        }
-
-        val doc = runCatching {
-            app.get("$mainUrl/arama?q=${query.encodeUrl()}", headers = getApiHeaders()).document
         }.getOrNull()
 
-        return doc?.select("div.anime-card, article.content-item, div.item")?.mapNotNull { it.toSearchResult() }
-            ?: emptyList()
+        if (!apiResults.isNullOrEmpty()) {
+            return apiResults
+        }
+
+        // 2. Yedek: Web Arama Fallback
+        val webResults = runCatching {
+            val doc = app.get("$mainUrl/arama?q=${trimmed.encodeUrl()}", headers = getApiHeaders()).document
+            doc.select("div.anime-card, article.content-item, div.item").mapNotNull { it.toSearchResult() }
+        }.getOrNull()
+
+        return webResults ?: emptyList()
     }
 
     // -------------------------------------------------------------------------
@@ -394,17 +436,28 @@ class AniziumProvider : MainAPI() {
     data class AniziumLastAddedResp(val page: AniziumPageData? = null)
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class AniziumPageData(val data: List<AniziumItem>? = null)
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    data class AniziumHomeResp(
-        @JsonProperty("settlement_top") val settlementTop: List<AniziumItem>? = null,
-        @JsonProperty("settlement_middle") val settlementMiddle: List<AniziumItem>? = null,
-        @JsonProperty("settlement_lower") val settlementLower: List<AniziumItem>? = null
+    data class AniziumPageData(
+        val page: Int? = null,
+        @JsonProperty("next_page") val nextPage: Int? = null,
+        @JsonProperty("total_pages") val totalPages: Int? = null,
+        val data: List<AniziumItem>? = null
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class AniziumSearchResp(val data: List<AniziumItem>? = null)
+    data class AniziumHomeResp(
+        val success: Boolean? = null,
+        @JsonProperty("settlement_top") val settlementTop: List<AniziumItem>? = null,
+        @JsonProperty("settlement_middle") val settlementMiddle: List<AniziumItem>? = null,
+        @JsonProperty("settlement_lower") val settlementLower: List<AniziumItem>? = null,
+        @JsonProperty("special_list") val specialList: List<AniziumItem>? = null
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class AniziumSearchResp(
+        val success: Boolean? = null,
+        val page: AniziumPageData? = null,
+        val data: List<AniziumItem>? = null
+    )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class AniziumItem(
