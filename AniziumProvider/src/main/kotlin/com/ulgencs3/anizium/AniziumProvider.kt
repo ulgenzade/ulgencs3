@@ -210,21 +210,35 @@ class AniziumProvider : MainAPI() {
                 val overview = anime.overview
                 val genres = anime.genres?.mapNotNull { it.name } ?: emptyList()
 
-                val episodes = mutableListOf<Episode>()
+                val subEpisodes = mutableListOf<Episode>()
+                val dubEpisodes = mutableListOf<Episode>()
+                val hasAnimeTrDub = anime.soundGroup?.any { it.value?.equals("trdub", ignoreCase = true) == true } == true
+
                 anime.seasons?.forEach { season ->
                     val sNum = season.number ?: 1
                     season.episodes?.forEach { ep ->
                         val epNum = ep.number ?: 1
                         val epName = ep.name?.takeIf { it.isNotBlank() && !it.equals("Bölüm $epNum", ignoreCase = true) }
-                        val epUrl = "$mainUrl/watch/$animeId?season=$sNum&episode=$epNum&epId=${ep.id ?: ""}"
+                        val baseEpUrl = "$mainUrl/watch/$animeId?season=$sNum&episode=$epNum&epId=${ep.id ?: ""}"
+                        val hasEpDub = ep.soundGroup?.any { it.equals("trdub", ignoreCase = true) } == true || hasAnimeTrDub
 
-                        episodes.add(newEpisode(epUrl) {
+                        subEpisodes.add(newEpisode("$baseEpUrl&audio=sub") {
                             this.name = epName
                             this.season = sNum
                             this.episode = epNum
                             this.description = ep.overview?.takeIf { it.isNotBlank() }
                             this.posterUrl = fixUrlNull(ep.bannerLink)
                         })
+
+                        if (hasEpDub) {
+                            dubEpisodes.add(newEpisode("$baseEpUrl&audio=dub") {
+                                this.name = if (epName != null) "$epName (TR Dublaj)" else "Bölüm $epNum (TR Dublaj)"
+                                this.season = sNum
+                                this.episode = epNum
+                                this.description = ep.overview?.takeIf { it.isNotBlank() }
+                                this.posterUrl = fixUrlNull(ep.bannerLink)
+                            })
+                        }
                     }
                 }
 
@@ -232,7 +246,10 @@ class AniziumProvider : MainAPI() {
                     this.posterUrl = fixUrlNull(poster)
                     this.plot = overview
                     this.tags = genres
-                    addEpisodes(DubStatus.Subbed, episodes)
+                    addEpisodes(DubStatus.Subbed, subEpisodes)
+                    if (dubEpisodes.isNotEmpty()) {
+                        addEpisodes(DubStatus.Dubbed, dubEpisodes)
+                    }
                 }
             }
         }
@@ -276,6 +293,8 @@ class AniziumProvider : MainAPI() {
         val season = Regex("""season=(\d+)""").find(data)?.groupValues?.get(1) ?: "1"
         val episode = Regex("""episode=(\d+)""").find(data)?.groupValues?.get(1) ?: "1"
 
+        val audioPref = Regex("""audio=(\w+)""").find(data)?.groupValues?.get(1) ?: "sub"
+
         if (!animeId.isNullOrEmpty()) {
             val sourceUrl = "$apiHost/anime/source?id=$animeId&site=main&plan=free&season=$season&episode=$episode&server=1"
             val res = runCatching {
@@ -290,11 +309,28 @@ class AniziumProvider : MainAPI() {
                     subtitleCallback(newSubtitleFile(label, file))
                 }
 
-                // 2. Orijinal ve Türkçe Dublaj Video Akışlarını Ekle (4K, 1080p, 720p)
-                res.groups?.forEach { grp ->
-                    val isDub = grp.group?.contains("dub", ignoreCase = true) == true ||
-                            grp.name?.contains("dublaj", ignoreCase = true) == true
-                    val grpName = grp.name ?: if (isDub) "Türkçe Dublaj" else "Japonca"
+                // 2. Grupları Sırala: DUB seçildiyse Türkçe Dublaj en başta gelsin!
+                val sortedGroups = res.groups?.sortedByDescending { grp ->
+                    val isTrDub = grp.group?.contains("trdub", ignoreCase = true) == true ||
+                            grp.name?.contains("trdub", ignoreCase = true) == true ||
+                            grp.name?.contains("türkçe", ignoreCase = true) == true
+                    if (audioPref == "dub") (if (isTrDub) 2 else 1)
+                    else (if (!isTrDub) 2 else 1)
+                }
+
+                // 3. Orijinal ve Türkçe Dublaj Video Akışlarını Ekle (4K, 1080p, 720p)
+                sortedGroups?.forEach { grp ->
+                    val isTrDub = grp.group?.contains("trdub", ignoreCase = true) == true ||
+                            grp.name?.contains("trdub", ignoreCase = true) == true ||
+                            grp.name?.contains("türkçe", ignoreCase = true) == true
+                    val isEnDub = grp.group?.contains("endub", ignoreCase = true) == true ||
+                            grp.name?.contains("ingilizce", ignoreCase = true) == true
+
+                    val grpName = when {
+                        isTrDub -> "Türkçe Dublaj"
+                        isEnDub -> "İngilizce Dublaj"
+                        else    -> "Japonca (Altyazılı)"
+                    }
 
                     grp.items?.forEach { item ->
                         val link = item.link?.takeIf { it.isNotBlank() } ?: return@forEach
@@ -400,7 +436,8 @@ class AniziumProvider : MainAPI() {
         val banner: String? = null,
         val overview: String? = null,
         val genres: List<AniziumGenre>? = null,
-        val seasons: List<AniziumSeason>? = null
+        val seasons: List<AniziumSeason>? = null,
+        @JsonProperty("sound_group") val soundGroup: List<AniziumSoundGroupItem>? = null
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -418,7 +455,9 @@ class AniziumProvider : MainAPI() {
         val name: String? = null,
         val number: Int? = null,
         val overview: String? = null,
-        @JsonProperty("banner_link") val bannerLink: String? = null
+        @JsonProperty("banner_link") val bannerLink: String? = null,
+        @JsonProperty("sound_group") val soundGroup: List<String>? = null,
+        @JsonProperty("dubbing_group") val dubbingGroup: List<String>? = null
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
