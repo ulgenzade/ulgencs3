@@ -361,124 +361,157 @@ class AnizmProvider : MainAPI() {
         val doc = app.get(data, headers = commonHeaders, interceptor = cfInterceptor).document
         val extractedUrls = mutableSetOf<String>()
 
-        // 1. Iframe'ler ve Video Container
-        doc.select("iframe[src], iframe[data-src], div#videoPlayer iframe, div.anizm_videoPlayer iframe").forEach { iframe ->
-            val src = fixUrlNull(
-                iframe.attr("src").takeIf { it.isNotBlank() } ?: iframe.attr("data-src")
-            ) ?: return@forEach
-            if (!src.contains("a-ads.com") && !src.contains("adservice") && extractedUrls.add(src)) {
-                loadExtractor(src, mainUrl, subtitleCallback, callback)
+        // 1. Sayfadaki Fansub (Çevirmen) Butonlarını Bul
+        val translatorElements = doc.select("a[data-translatorclick], a[translator], .fansubTabs a, .anizm_colorDefault[translator]")
+        val fansubs = mutableListOf<Pair<String, String?>>() // Pair(FansubAdı, TranslatorUrl)
+
+        if (translatorElements.isNotEmpty()) {
+            translatorElements.forEach { el ->
+                val fName = el.text().trim().takeIf { it.isNotBlank() } ?: "Fansub"
+                val tUrl = fixUrlNull(el.attr("translator").takeIf { it.isNotBlank() } ?: el.attr("href"))
+                fansubs.add(Pair(fName, tUrl))
             }
+        } else {
+            val defaultFansub = doc.selectFirst(".activeTranslator, .anizm_colorDefault.active, .fansubTitle")?.text()?.trim()
+                ?: "Anizm"
+            fansubs.add(Pair(defaultFansub, null))
         }
 
-        // 2. videoPlayerButtons AJAX (Sunucu Butonları: Sistenn, Vidmoly, Abyss, Voe vb.)
-        doc.select("a.videoPlayerButtons, button.videoPlayerButtons, a.anizm_button[data-id], [data-id]").forEach { el ->
-            val videoId = el.attr("data-id").takeIf { it.isNotBlank() } ?: return@forEach
-            val serverName = el.text().trim().takeIf { it.isNotBlank() } ?: "Player"
-            
+        // 2. Her Fansub İçin SADECE Aincrad Player'ını Çek
+        fansubs.distinctBy { it.first }.forEach { (fansubName, translatorUrl) ->
             runCatching {
-                val resp = app.post(
-                    "$mainUrl/ajax/player",
-                    headers = commonHeaders + mapOf(
-                        "X-Requested-With" to "XMLHttpRequest",
-                        "Content-Type" to "application/x-www-form-urlencoded",
-                        "Referer" to data
-                    ),
-                    data = mapOf("id" to videoId, "action" to "player", "type" to "player"),
-                    interceptor = cfInterceptor
-                ).text
+                // Eğer farklı bir çevirmen sekmesi ise onun butonlarını içeren dokümanı al
+                val targetDoc = if (!translatorUrl.isNullOrBlank() && !translatorUrl.equals(data, ignoreCase = true) && !translatorUrl.endsWith("#")) {
+                    val resp = app.get(
+                        translatorUrl,
+                        headers = commonHeaders + mapOf("X-Requested-With" to "XMLHttpRequest", "Referer" to data),
+                        interceptor = cfInterceptor
+                    )
+                    // Yanıt JSON ({data: "..."}) ise içindeki HTML'i ayrıştır
+                    val jsonHtml = runCatching { org.json.JSONObject(resp.text).optString("data") }.getOrNull()
+                    if (!jsonHtml.isNullOrBlank()) {
+                        org.jsoup.Jsoup.parse(jsonHtml)
+                    } else {
+                        resp.document
+                    }
+                } else {
+                    doc
+                }
 
-                // İframe kaynaklarını çek
-                Regex("""(?:src|href)=["'](https?://[^"']+)["']""").findAll(resp).forEach { m ->
-                    val embedUrl = m.groupValues[1]
-                    if (!embedUrl.contains("adservice") && !embedUrl.contains("googleads") && extractedUrls.add(embedUrl)) {
-                        // Eğer anizm embed sayfasıysa içindeki stream/iframe'i al
-                        if (embedUrl.contains("anizm.net/embed") || embedUrl.contains("/embed/")) {
-                            runCatching {
-                                val innerDoc = app.get(embedUrl, headers = commonHeaders + mapOf("Referer" to data), interceptor = cfInterceptor).document
-                                innerDoc.select("iframe[src]").forEach { innerIframe ->
-                                    val innerSrc = fixUrlNull(innerIframe.attr("src")) ?: return@forEach
-                                    if (extractedUrls.add(innerSrc)) {
-                                        loadExtractor(innerSrc, embedUrl, subtitleCallback, callback)
-                                    }
-                                }
-                                innerDoc.select("source[src]").forEach { s ->
-                                    val src = fixUrlNull(s.attr("src")) ?: return@forEach
-                                    if (extractedUrls.add(src)) {
-                                        val isHls = s.attr("type").contains("mpegurl") || src.contains("m3u8")
-                                        callback(newExtractorLink(
-                                            source = name,
-                                            name = "$name [$serverName]",
-                                            url = src,
-                                            type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                                        ))
-                                    }
-                                }
-                            }
-                        } else {
-                            loadExtractor(embedUrl, mainUrl, subtitleCallback, callback)
+                // Bu fansub'ın Aincrad butonunu bul
+                val aincradButton = targetDoc.select("a.videoPlayerButtons, button.videoPlayerButtons, a[data-playerclick], a[video], a.anizm_button[data-id]").firstOrNull { btn ->
+                    val txt = btn.text().lowercase()
+                    txt.contains("aincrad") || txt.contains("reklamsız") || txt.contains("reklamsiz")
+                } ?: targetDoc.selectFirst("a.videoPlayerButtons, a[data-playerclick], a[video]")
+
+                val videoId = aincradButton?.attr("data-id")?.takeIf { it.isNotBlank() }
+                val videoHref = aincradButton?.attr("video")?.takeIf { it.isNotBlank() }
+                    ?: aincradButton?.attr("href")?.takeIf { it.contains("/video/") }
+
+                val targetVideoUrl = when {
+                    !videoHref.isNullOrBlank() -> fixUrlNull(videoHref)
+                    !videoId.isNullOrBlank() -> "$mainUrl/video/$videoId"
+                    else -> null
+                }
+
+                if (!targetVideoUrl.isNullOrBlank() && extractedUrls.add(targetVideoUrl)) {
+                    extractAincradStream(targetVideoUrl, data, fansubName, callback)
+                } else if (!videoId.isNullOrBlank()) {
+                    // AJAX fallback: POST /ajax/player action=player
+                    val ajaxResp = app.post(
+                        "$mainUrl/ajax/player",
+                        headers = commonHeaders + mapOf(
+                            "X-Requested-With" to "XMLHttpRequest",
+                            "Content-Type" to "application/x-www-form-urlencoded",
+                            "Referer" to data
+                        ),
+                        data = mapOf("id" to videoId, "action" to "player"),
+                        interceptor = cfInterceptor
+                    ).text
+
+                    Regex("""(?:src|href)=["'](https?://[^"']*(?:/video/|/embed/)[^"']*)["']""").findAll(ajaxResp).forEach { m ->
+                        val vUrl = m.groupValues[1]
+                        if (extractedUrls.add(vUrl)) {
+                            extractAincradStream(vUrl, data, fansubName, callback)
                         }
                     }
                 }
-
-                // Direkt video URL'si varsa (m3u8, mp4)
-                Regex("""(?:file|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']""").findAll(resp).forEach { m ->
-                    val vUrl = m.groupValues[1]
-                    if (extractedUrls.add(vUrl)) {
-                        val isHls = vUrl.contains("m3u8")
-                        callback(newExtractorLink(
-                            source = name,
-                            name = "$name [$serverName]",
-                            url = vUrl,
-                            type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                        ))
-                    }
-                }
             }
         }
 
-        // 3. Source tag
-        doc.select("source[src]").forEach { source ->
-            val src = fixUrlNull(source.attr("src")) ?: return@forEach
-            if (extractedUrls.add(src)) {
-                val isHls = source.attr("type").contains("mpegurl") || src.contains("m3u8")
+        return extractedUrls.isNotEmpty()
+    }
+
+    private suspend fun extractAincradStream(
+        videoPageUrl: String,
+        refererUrl: String,
+        fansubName: String,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        runCatching {
+            val resp = app.get(
+                videoPageUrl,
+                headers = commonHeaders + mapOf(
+                    "Referer" to refererUrl,
+                    "X-Requested-With" to "XMLHttpRequest"
+                ),
+                interceptor = cfInterceptor
+            )
+            val html = resp.text
+
+            // 1. m3u8 playlist akışlarını ara
+            val m3u8Matches = Regex("""(?:file|src|source)\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']""").findAll(html).map { it.groupValues[1] }.toList() +
+                    Regex("""["'](https?://[^"']+\.m3u8[^"']*)["']""").findAll(html).map { it.groupValues[1] }.toList()
+
+            m3u8Matches.distinct().forEach { m3u8Url ->
                 callback(newExtractorLink(
                     source = name,
-                    name = "$name [Direct]",
-                    url = src,
-                    type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                ))
+                    name = "$name [Aincrad - $fansubName]",
+                    url = m3u8Url,
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.headers = mapOf(
+                        "Referer" to "$mainUrl/",
+                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                    )
+                })
             }
-        }
 
-        // 4. Script embed URL'leri
-        val scriptContent = doc.select("script:not([src])").joinToString("\n") { it.data() }
-        val embedDomains = listOf(
-            "vidmoly", "sibnet", "dood", "streamtape", "uqload", "voe", "yourupload",
-            "ok.ru", "odnoklassniki", "myvi", "abyss", "mp4upload", "fembed", "mixdrop",
-            "drive.google", "aincrad", "sistenn", "hdvid", "filemoon"
-        )
-        val domainPat = embedDomains.joinToString("|")
-        Regex("""https?://[^\s"'<>]*(?:$domainPat)[^\s"'<>]*""").findAll(scriptContent).forEach { m ->
-            if (extractedUrls.add(m.value)) {
-                loadExtractor(m.value, mainUrl, subtitleCallback, callback)
-            }
-        }
+            // 2. mp4 akışlarını ara
+            if (m3u8Matches.isEmpty()) {
+                val mp4Matches = Regex("""(?:file|src|source)\s*[:=]\s*["']([^"']+\.mp4[^"']*)["']""").findAll(html).map { it.groupValues[1] }.toList() +
+                        Regex("""["'](https?://[^"']+\.mp4[^"']*)["']""").findAll(html).map { it.groupValues[1] }.toList()
 
-        Regex("""(?:file|src|videoUrl|hls)\s*[=:]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']""")
-            .findAll(scriptContent).forEach { m ->
-                val vUrl = m.groupValues[1]
-                if (extractedUrls.add(vUrl)) {
+                mp4Matches.distinct().forEach { mp4Url ->
                     callback(newExtractorLink(
                         source = name,
-                        name = "$name [Stream]",
-                        url = vUrl,
-                        type = if (vUrl.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                        name = "$name [Aincrad - $fansubName]",
+                        url = mp4Url,
+                        type = ExtractorLinkType.VIDEO
+                    ) {
+                        this.headers = mapOf(
+                            "Referer" to "$mainUrl/",
+                            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                        )
+                    })
+                }
+            }
+
+            // 3. İç iframe varsa (embed içi player)
+            if (m3u8Matches.isEmpty()) {
+                val doc = resp.document
+                doc.select("source[src]").forEach { s ->
+                    val src = fixUrlNull(s.attr("src")) ?: return@forEach
+                    val isHls = s.attr("type").contains("mpegurl") || src.contains("m3u8")
+                    callback(newExtractorLink(
+                        source = name,
+                        name = "$name [Aincrad - $fansubName]",
+                        url = src,
+                        type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                     ))
                 }
             }
-
-        return true
+        }
     }
 
     private fun isInvalidTitle(title: String?): Boolean {
