@@ -4,6 +4,11 @@
     "internalName": "AnimeCixProvider",
     "pluginClassName": "com.ulgencs3.animecix.AnimeCixProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnimeCixProvider.cs3",
     "iconUrl": "https://animecix.tv/favicon.ico",
     "description": "Geniş anime ve çizgi dizi platformu.",
@@ -21,6 +26,11 @@
     "internalName": "AniziumProvider",
     "pluginClassName": "com.ulgencs3.anizium.AniziumProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AniziumProvider.cs3",
     "iconUrl": "https://anizium.co/assets/images/favicon.png",
     "description": "4K anime keyfi, çoklu altyazı ve TR dublaj.",
@@ -38,6 +48,11 @@
     "internalName": "AnizmProvider",
     "pluginClassName": "com.ulgencs3.anizm.AnizmProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/AnizmProvider.cs3",
     "iconUrl": "https://anizm.net/favicon.ico",
     "description": "Popüler güncel anime arşivi.",
@@ -55,6 +70,11 @@
     "internalName": "BelgeselXProvider",
     "pluginClassName": "com.ulgencs3.belgeselx.BelgeselXProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/BelgeselXProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://belgeselx.com&size=128",
     "description": "Türkçe dublajlı doğa, bilim ve tarih belgeselleri.",
@@ -70,6 +90,11 @@
     "internalName": "CizgiMaxProvider",
     "pluginClassName": "com.ulgencs3.cizgimax.CizgiMaxProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/CizgiMaxProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://cizgimax.online&size=128",
     "description": "Nostaljik ve güncel çizgi filmler.",
@@ -86,6 +111,11 @@
     "internalName": "DdiziProvider",
     "pluginClassName": "com.ulgencs3.ddizi.DdiziProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DdiziProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://www.ddizi.pro&size=128",
     "description": "Klasik ve güncel yerli/yabancı diziler.",
@@ -101,6 +131,11 @@
     "internalName": "DiziBoxProvider",
     "pluginClassName": "com.ulgencs3.dizibox.DiziBoxProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziBoxProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://www.dizibox.live&size=128",
     "description": "Yabancı diziler, dublaj ve altyazı seçenekleri.",
@@ -116,6 +151,11 @@
     "internalName": "DiziKoreaProvider",
     "pluginClassName": "com.ulgencs3.dizikorea.DiziKoreaProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziKoreaProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://dizikorea.com&size=128",
     "description": "Asya dizileri ve K-Drama arşivi.",
@@ -131,6 +171,11 @@
     "internalName": "DiziMomProvider",
     "pluginClassName": "com.ulgencs3.dizimom.DiziMomProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziMomProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://dizimom.tv&size=128",
     "description": "Güncel yabancı diziler ve animasyonlar.",
@@ -146,6 +191,11 @@
     "internalName": "DiziPalProvider",
     "pluginClassName": "com.ulgencs3.dizipal.DiziPalProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DiziPalProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://dizipal2132.com&size=128",
     "description": "Dijital platform dizileri ve filmleri.",
@@ -162,6 +212,11 @@
     "internalName": "DizillaProvider",
     "pluginClassName": "com.ulgencs3.dizilla.DizillaProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/DizillaProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://dizilla.now&size=128",
     "description": "Popüler yabancı ve yerli diziler.",
@@ -177,6 +232,11 @@
     "internalName": "FilmMakinesiProvider",
     "pluginClassName": "com.ulgencs3.filmmakinesi.FilmMakinesiProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FilmMakinesiProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://filmmakinesi.pw&size=128",
     "description": "1080p ve 4K yerli ve yabancı filmler.",
@@ -193,6 +253,11 @@
     "internalName": "FilmModuProvider",
     "pluginClassName": "com.ulgencs3.filmmodu.FilmModuProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FilmModuProvider.cs3",
     "iconUrl": "https://www.filmmodu.one/favicon.ico",
     "description": "Full HD Türkçe dublaj ve altyazılı filmler.",
@@ -208,6 +273,11 @@
     "internalName": "FullHDFilmizleseneProvider",
     "pluginClassName": "com.ulgencs3.fullhdfilmizlesene.FullHDFilmizleseneProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/FullHDFilmizleseneProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://www.fullhdfilmizlesene.pw&size=128",
     "description": "Geniş Full HD sinema arşivi.",
@@ -223,6 +293,11 @@
     "internalName": "HDFilmCehennemiProvider",
     "pluginClassName": "com.ulgencs3.hdfilmcehennemi.HDFilmCehennemiProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/HDFilmCehennemiProvider.cs3",
     "iconUrl": "https://www.hdfilmcehennemi.nl/favicon.ico",
     "description": "En popüler yabancı dizi ve sinema arşivi.",
@@ -239,6 +314,11 @@
     "internalName": "InatBoxProvider",
     "pluginClassName": "com.ulgencs3.inatbox.InatBoxProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/InatBoxProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://inatbox.org&size=128",
     "description": "Canlı TV, spor ve sinema yayınları.",
@@ -256,6 +336,11 @@
     "internalName": "JetFilmizleProvider",
     "pluginClassName": "com.ulgencs3.jetfilmizle.JetFilmizleProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/JetFilmizleProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://jetfilmizle.mobi&size=128",
     "description": "Hızlı ve kesintisiz film izleme.",
@@ -271,6 +356,11 @@
     "internalName": "KultFilmlerProvider",
     "pluginClassName": "com.ulgencs3.kultfilmler.KultFilmlerProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/KultFilmlerProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://kultfilmler.com&size=128",
     "description": "Kült ve klasik sinema filmleri.",
@@ -286,6 +376,11 @@
     "internalName": "OpenAnimeProvider",
     "pluginClassName": "com.ulgencs3.openanime.OpenAnimeProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/OpenAnimeProvider.cs3",
     "iconUrl": "https://openani.me/favicon.ico",
     "description": "Modern ve hızlı anime izleme.",
@@ -303,6 +398,11 @@
     "internalName": "RecTVProvider",
     "pluginClassName": "com.ulgencs3.rectv.RecTVProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/RecTVProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://rectv.net&size=128",
     "description": "Canlı TV kanalları, dizi ve film akışları.",
@@ -320,6 +420,11 @@
     "internalName": "SelcukFlixProvider",
     "pluginClassName": "com.ulgencs3.selcukflix.SelcukFlixProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SelcukFlixProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://selcukflix.com&size=128",
     "description": "Dizi, film ve özel canlı yayınlar.",
@@ -337,6 +442,11 @@
     "internalName": "SetFilmIzleProvider",
     "pluginClassName": "com.ulgencs3.setfilmizle.SetFilmIzleProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SetFilmIzleProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://setfilmizle.vip&size=128",
     "description": "Güncel vizyon filmleri ve yabancı diziler.",
@@ -353,6 +463,11 @@
     "internalName": "SezonlukDiziProvider",
     "pluginClassName": "com.ulgencs3.sezonlukdizi.SezonlukDiziProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SezonlukDiziProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://sezonlukdizi5.com&size=128",
     "description": "Eksiksiz sezonluk yabancı dizi arşivi.",
@@ -368,6 +483,11 @@
     "internalName": "SinemaCXProvider",
     "pluginClassName": "com.ulgencs3.sinemacx.SinemaCXProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SinemaCXProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://sinemacx.com&size=128",
     "description": "Yüksek çözünürlüklü sinema filmleri.",
@@ -383,6 +503,11 @@
     "internalName": "SinewixProvider",
     "pluginClassName": "com.ulgencs3.sinewix.SinewixProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/SinewixProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://sinewix.com&size=128",
     "description": "Film, dizi ve belgesel platformu.",
@@ -399,6 +524,11 @@
     "internalName": "TrAnimeIzleProvider",
     "pluginClassName": "com.ulgencs3.tranimeizle.TrAnimeIzleProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TrAnimeIzleProvider.cs3",
     "iconUrl": "https://www.tranimeizle.io/favicon.ico",
     "description": "Geniş Türkçe altyazılı anime koleksiyonu.",
@@ -416,6 +546,11 @@
     "internalName": "TurkAnimeProvider",
     "pluginClassName": "com.ulgencs3.turkanime.TurkAnimeProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/TurkAnimeProvider.cs3",
     "iconUrl": "https://www.turkanime.tv/imajlar/favicon.ico",
     "description": "Türkiye'nin en büyük anime arşivi.",
@@ -433,6 +568,11 @@
     "internalName": "WebteIzleProvider",
     "pluginClassName": "com.ulgencs3.webteizle.WebteIzleProvider",
     "version": 1,
+    "apiVersion": 1,
+    "authors": [
+      "ulgenzade"
+    ],
+    "repositoryUrl": "https://github.com/ulgenzade/ulgencs3",
     "url": "https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/WebteIzleProvider.cs3",
     "iconUrl": "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAV&fallback_opts=TYPE,SIZE,URL&url=https://webteizle.vip&size=128",
     "description": "Yüksek kaliteli film ve diziler.",

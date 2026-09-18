@@ -216,6 +216,9 @@ def generate_plugins_json(builds_dir, repo_slug="ulgenzade/ulgencs3"):
                 "internalName": internal_name,
                 "pluginClassName": class_name,
                 "version": version,
+                "apiVersion": 1,
+                "authors": ["ulgenzade"],
+                "repositoryUrl": f"https://github.com/{repo_slug}",
                 "url": url,
                 "iconUrl": icon_url,
                 "description": description,
@@ -242,6 +245,9 @@ def generate_plugins_json(builds_dir, repo_slug="ulgenzade/ulgencs3"):
                 "internalName": internal_name,
                 "pluginClassName": class_name,
                 "version": 1,
+                "apiVersion": 1,
+                "authors": ["ulgenzade"],
+                "repositoryUrl": f"https://github.com/{repo_slug}",
                 "url": url,
                 "iconUrl": icon_url,
                 "description": description,
@@ -259,12 +265,13 @@ def generate_plugins_json(builds_dir, repo_slug="ulgenzade/ulgencs3"):
     print(f"Successfully generated {out_path} with {len(plugins)} plugins.")
 
     # repo.json dosyasını da builds dizinine kopyala / oluştur
-    repo_dest = os.path.join(builds_dir, "repo.json")
-    repo_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "repo.json")
+    repo_dest = os.path.abspath(os.path.join(builds_dir, "repo.json"))
+    repo_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "repo.json"))
     if os.path.exists(repo_src):
-        import shutil
-        shutil.copy2(repo_src, repo_dest)
-        print(f"Copied repo.json to {repo_dest}")
+        if repo_src != repo_dest:
+            import shutil
+            shutil.copy2(repo_src, repo_dest)
+            print(f"Copied repo.json to {repo_dest}")
     else:
         repo_data = {
             "name": "UlgenCS3",
