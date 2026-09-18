@@ -1,4 +1,4 @@
-﻿package com.ulgencs3.anizm
+package com.ulgencs3.anizm
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -59,19 +59,21 @@ class AnizmProvider : MainAPI() {
     private fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")
 
     // data format: "action|param"
-    // action=home     -> anasayfa HTML (a.animeTitleLink)
+    // action=home     -> anasayfa swiper ve son eklenenler
     // action=filtre   -> /anime-listesi/?filtre=X
     // action=durum    -> /anime-listesi/?durum=X
     // action=tur      -> /anime-listesi/?tur=X
     // action=kategori -> /kategoriler/ID
+    // action=tema     -> /temalar/ID
 
     override val mainPage = mainPageOf(
-        "home|home"            to "Son Eklenenler",
-        "filtre|izlenme"       to "Populer / En Cok Izlenenler",
+        "home|home"            to "Son Eklenenler & Populer",
+        "filtre|izlenme"       to "En Cok Izlenenler",
         "filtre|puan"          to "En Yuksek Puanlilar",
         "durum|devam-ediyor"   to "Devam Eden Animeler",
         "durum|tamamlandi"     to "Tamamlanan Animeler",
         "tur|film"             to "Anime Filmleri",
+        "tema|3"               to "Isekai",
         "kategori|34"          to "Shounen",
         "kategori|2"           to "Aksiyon",
         "kategori|1"           to "Macera",
@@ -83,9 +85,8 @@ class AnizmProvider : MainAPI() {
         "kategori|15"          to "Gizem",
         "kategori|10"          to "Dedektif",
         "kategori|11"          to "Dogaustu Gucler",
-        "kategori|12"          to "Dovis",
-        "kategori|30"          to "Dovis Sanatlari",
-        "kategori|50"          to "Isekai",
+        "kategori|12"          to "Dovus",
+        "kategori|30"          to "Dovus Sanatlari",
         "kategori|20"          to "Korku",
         "kategori|14"          to "Gerilim",
         "kategori|7"           to "Askeri",
@@ -104,13 +105,32 @@ class AnizmProvider : MainAPI() {
         when (action) {
             "home" -> {
                 val doc = app.get(mainUrl, headers = commonHeaders, interceptor = cfInterceptor).document
-                doc.select("a.animeTitleLink").forEach { el ->
-                    el.toAnizmSearchResult()?.let { items.add(it) }
+                
+                // 1. Ana Sayfa Swiper Slide Kartları (.swiper-slide a.slideAnimeLink)
+                doc.select("div.swiper-slide, a.slideAnimeLink").forEach { el ->
+                    val a = if (el.tagName() == "a") el else el.selectFirst("a.slideAnimeLink, a[href]") ?: return@forEach
+                    val href = fixUrlNull(a.attr("href")) ?: return@forEach
+                    val finalUrl = cleanAnimeUrl(href) ?: return@forEach
+                    
+                    val title = a.selectFirst("h6:not(:has(img)):last-child, .animeTitle, h3, h2")?.text()?.trim()
+                        ?: a.select("h6").lastOrNull()?.text()?.trim()
+                        ?: titleFromSlug(finalUrl)
+
+                    if (isInvalidTitle(title)) return@forEach
+
+                    val poster = fixUrlNull(
+                        a.selectFirst("img")?.attr("data-src")?.takeIf { it.isNotBlank() }
+                            ?: a.selectFirst("img")?.attr("src")?.takeIf { it.isNotBlank() && !it.contains("base64") }
+                    )
+
+                    items.add(newAnimeSearchResponse(title, finalUrl, TvType.Anime) {
+                        this.posterUrl = poster
+                    })
                 }
+
+                // 2. Diğer kartlar (ui card vb.)
                 if (items.isEmpty()) {
-                    doc.select("div.animeCard a, div.anizmCard a, li.animeLi a").forEach { el ->
-                        el.toAnizmSearchResult()?.let { items.add(it) }
-                    }
+                    items.addAll(parseAnimeListPage(doc))
                 }
             }
             "filtre" -> {
@@ -133,6 +153,11 @@ class AnizmProvider : MainAPI() {
                 val doc = app.get(url, headers = commonHeaders, interceptor = cfInterceptor).document
                 items.addAll(parseAnimeListPage(doc))
             }
+            "tema" -> {
+                val url = "$mainUrl/temalar/$param?sayfa=$page"
+                val doc = app.get(url, headers = commonHeaders, interceptor = cfInterceptor).document
+                items.addAll(parseAnimeListPage(doc))
+            }
         }
 
         return newHomePageResponse(
@@ -144,36 +169,56 @@ class AnizmProvider : MainAPI() {
     private fun parseAnimeListPage(doc: org.jsoup.nodes.Document): List<SearchResponse> {
         val results = mutableListOf<SearchResponse>()
 
-        // 1. a.animeTitleLink - en guvenilir selector
+        // 1. Kategori ve Liste Sayfası Ana Kart Yapısı: div.ui.card / div.card / div.poster-card
+        doc.select("div.ui.card, div.card, div.poster-card, div.animeCard").forEach { card ->
+            val linkEl = card.selectFirst("a.header.anime-title, a.header, a.anime-title, a.image, a[href]") ?: return@forEach
+            val href = fixUrlNull(linkEl.attr("href")) ?: return@forEach
+            val finalUrl = cleanAnimeUrl(href) ?: return@forEach
+
+            val title = card.selectFirst("a.header.anime-title, a.header, a.anime-title, .header, h3, h2")?.text()?.trim()
+                ?.takeIf { !isInvalidTitle(it) }
+                ?: titleFromSlug(finalUrl)
+
+            if (isInvalidTitle(title)) return@forEach
+
+            val poster = fixUrlNull(
+                card.selectFirst("a.image img, img")?.let { img ->
+                    img.attr("data-src").takeIf { it.isNotBlank() }
+                        ?: img.attr("src").takeIf { it.isNotBlank() && !it.contains("base64") }
+                }
+            )
+
+            results.add(newAnimeSearchResponse(title, finalUrl, TvType.Anime) {
+                this.posterUrl = poster
+            })
+        }
+        if (results.isNotEmpty()) return results
+
+        // 2. Swiper Slide Kartları (Ana sayfa & listeler)
+        doc.select("div.swiper-slide, a.slideAnimeLink").forEach { el ->
+            val a = if (el.tagName() == "a") el else el.selectFirst("a.slideAnimeLink, a[href]") ?: return@forEach
+            val href = fixUrlNull(a.attr("href")) ?: return@forEach
+            val finalUrl = cleanAnimeUrl(href) ?: return@forEach
+
+            val title = a.selectFirst("h6:not(:has(img)):last-child, .animeTitle, h3, h2")?.text()?.trim()
+                ?.takeIf { !isInvalidTitle(it) }
+                ?: titleFromSlug(finalUrl)
+
+            if (isInvalidTitle(title)) return@forEach
+
+            val poster = fixUrlNull(
+                a.selectFirst("img")?.attr("data-src")?.takeIf { it.isNotBlank() }
+                    ?: a.selectFirst("img")?.attr("src")?.takeIf { it.isNotBlank() && !it.contains("base64") }
+            )
+
+            results.add(newAnimeSearchResponse(title, finalUrl, TvType.Anime) {
+                this.posterUrl = poster
+            })
+        }
+        if (results.isNotEmpty()) return results
+
+        // 3. a.animeTitleLink Arama Sonucu Formatı
         doc.select("a.animeTitleLink").forEach { el ->
-            el.toAnizmSearchResult()?.let { results.add(it) }
-        }
-        if (results.isNotEmpty()) return results
-
-        // 2. div/article card yapisi
-        doc.select("div.animeCard, div.anizmCard, div.anime-card, article.animeItem, div.animeItem").forEach { el ->
-            val a = el.selectFirst("a[href]") ?: return@forEach
-            a.toAnizmSearchResult()?.let { results.add(it) }
-        }
-        if (results.isNotEmpty()) return results
-
-        // 3. Liste/grid
-        doc.select("div.poster-item, div.media-item, li.animeListItem, li.listItem").forEach { el ->
-            val a = el.selectFirst("a[href]") ?: return@forEach
-            a.toAnizmSearchResult()?.let { results.add(it) }
-        }
-        if (results.isNotEmpty()) return results
-
-        // 4. Son care: anizm.net linklerini bul
-        doc.select("a[href^='/'][href!='#']").filter { el ->
-            val href = el.attr("href")
-            !href.contains("kategoriler") &&
-            !href.contains("takvim") &&
-            !href.contains("fansublar") &&
-            !href.contains("-bolum-izle") &&
-            !href.contains("/raporver/") &&
-            href.length > 3
-        }.take(30).forEach { el ->
             el.toAnizmSearchResult()?.let { results.add(it) }
         }
 
@@ -187,7 +232,7 @@ class AnizmProvider : MainAPI() {
 
         val results = mutableListOf<SearchResponse>()
 
-        // 1. POST /request (AJAX - sitenin kendi arama mekanizmasi)
+        // 1. POST /request (AJAX - sitenin kendi hızlı ve detaylı arama mekanizması)
         runCatching {
             val doc = app.post(
                 "$mainUrl/request",
@@ -198,8 +243,26 @@ class AnizmProvider : MainAPI() {
                 data = mapOf("action" to "search", "value" to trimmed),
                 interceptor = cfInterceptor
             ).document
-            doc.select("a.animeTitleLink").forEach { el ->
-                el.toAnizmSearchResult()?.let { results.add(it) }
+
+            // a.animeTitleLink elemanlarını ve resimlerini doğru eşleştir
+            doc.select("div.searchResultItem, div.animeSearchItem, div.item").forEach { item ->
+                val titleEl = item.selectFirst("a.animeTitleLink, a.title, h3 a, h4 a") ?: return@forEach
+                val href = fixUrlNull(titleEl.attr("href")) ?: return@forEach
+                val finalUrl = cleanAnimeUrl(href) ?: return@forEach
+                val title = titleEl.text().trim().takeIf { !isInvalidTitle(it) } ?: titleFromSlug(finalUrl)
+                val poster = fixUrlNull(
+                    item.selectFirst("img")?.attr("data-src")?.takeIf { it.isNotBlank() }
+                        ?: item.selectFirst("img")?.attr("src")?.takeIf { it.isNotBlank() && !it.contains("base64") }
+                )
+                results.add(newAnimeSearchResponse(title, finalUrl, TvType.Anime) {
+                    this.posterUrl = poster
+                })
+            }
+
+            if (results.isEmpty()) {
+                doc.select("a.animeTitleLink").forEach { el ->
+                    el.toAnizmSearchResult()?.let { results.add(it) }
+                }
             }
         }
         if (results.isNotEmpty()) return results.distinctBy { it.url }
@@ -211,9 +274,7 @@ class AnizmProvider : MainAPI() {
                 headers = ajaxHeaders,
                 interceptor = cfInterceptor
             ).document
-            doc.select("a.animeTitleLink").forEach { el ->
-                el.toAnizmSearchResult()?.let { results.add(it) }
-            }
+            results.addAll(parseAnimeListPage(doc))
         }
         if (results.isNotEmpty()) return results.distinctBy { it.url }
 
@@ -237,7 +298,7 @@ class AnizmProvider : MainAPI() {
         val title = doc.selectFirst("h1.animeTitle, h1.page-title, h2.animeName, div.animeInfo h1, h1")
             ?.text()?.trim()
             ?: doc.selectFirst("meta[property=og:title]")?.attr("content")
-            ?: "Bilinmeyen Anime"
+            ?: titleFromSlug(url)
 
         val poster = fixUrlNull(
             doc.selectFirst("div.animePoster img, img.animeCover, div.poster img, div.animeImage img, img.cover")
@@ -248,13 +309,14 @@ class AnizmProvider : MainAPI() {
         )
 
         val description = doc.selectFirst(
-            "p.animeDesc, div.animeDescription, div.summary, div.animeInfo p, div.ozet"
+            "p.animeDesc, div.animeDescription, div.summary, div.animeInfo p, div.ozet, p.animeSummary"
         )?.text()?.trim()
 
         val tags = doc.select(
-            "div.animeGenres a, a[href*='kategoriler'], div.tags a"
-        ).map { it.text().trim() }.filter { it.isNotBlank() }
+            "div.animeGenres a, a[href*='kategoriler'], a[href*='temalar'], div.tags a"
+        ).map { it.text().trim() }.filter { it.isNotBlank() && !it.startsWith("+") }
 
+        // Bölüm listesi
         val rawEpisodes = doc.select(
             "div.episodeListTabContent a[href*='-bolum-izle'], " +
             "div.animeEpisodesSquareListDetay a[href*='-bolum-izle'], " +
@@ -262,15 +324,28 @@ class AnizmProvider : MainAPI() {
             "div.bolumler a, ul.bolum-listesi li a"
         ).mapNotNull { el ->
             val epUrl = fixUrlNull(el.attr("href")) ?: return@mapNotNull null
-            val epText = el.text().trim().takeIf { it.isNotBlank() } ?: el.attr("title").trim()
-            val epNum = Regex("""(\d+)""").find(epText)?.groupValues?.get(1)?.toIntOrNull()
-            val cleanText = epText.replace(Regex("""^\s*\d+\.\s*Bolum\s*[-:]*\s*"""), "").trim()
-            val finalName = cleanText.takeIf { it.isNotBlank() && !it.equals("Bolum", ignoreCase = true) }
+            val rawText = el.text().trim().takeIf { it.isNotBlank() } ?: el.attr("title").trim()
+            val epNum = Regex("""(\d+)""").find(rawText)?.groupValues?.get(1)?.toIntOrNull()
+
+            // "1. Bölüm", "12. Bölüm Final", "1. Bölüm izle" gibi metinleri temizle
+            val cleanName = rawText
+                .replace(Regex("""^\s*\d+\s*[\.\-:]*\s*B[oöOÖ]l[uüUÜ]m\s*[-:–]*\s*""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""\s*izle\s*$""", RegexOption.IGNORE_CASE), "")
+                .trim()
+
+            // Eğer cleanName tamamen boşsa veya sadece "Bölüm" ise name = null bırak (CloudStream çiftleme yapmasın: "1. 1. Bölüm" yerine "1. Bölüm" olsun)
+            val finalName = if (cleanName.isNotBlank() && !cleanName.equals("bölüm", ignoreCase = true) && !cleanName.equals("bolum", ignoreCase = true)) {
+                cleanName
+            } else {
+                null
+            }
+
             newEpisode(epUrl) {
                 this.name = finalName
                 this.episode = epNum
                 this.season = 1
                 this.posterUrl = poster
+                this.description = description
             }
         }.distinctBy { it.data }
 
@@ -375,30 +450,64 @@ class AnizmProvider : MainAPI() {
         return true
     }
 
+    private fun isInvalidTitle(title: String?): Boolean {
+        if (title.isNullOrBlank()) return true
+        val lower = title.lowercase().trim()
+        return lower == "izle" ||
+                lower == "bölüm" ||
+                lower == "bolum" ||
+                lower == "ilk bölümü izle" ||
+                lower == "bölümü izle" ||
+                lower == "hepsini izle" ||
+                lower.matches(Regex("""^\d+$""")) ||
+                lower.length < 2
+    }
+
+    private fun cleanAnimeUrl(url: String): String? {
+        var clean = url
+        if (clean.contains("-bolum-izle")) {
+            clean = clean.replace(Regex("""-\d+-bolum-izle.*$"""), "")
+        }
+        if (clean.contains("-bolum-final")) {
+            clean = clean.replace(Regex("""-\d+-bolum-final.*$"""), "")
+        }
+        if (clean.contains("/bolum/") ||
+            clean.contains("/kategoriler/") ||
+            clean.contains("/temalar/") ||
+            clean.contains("/takvim") ||
+            clean.contains("/fansublar") ||
+            clean.contains("/raporver/") ||
+            clean.endsWith(".css") ||
+            clean.endsWith(".js")
+        ) {
+            return null
+        }
+        return clean
+    }
+
+    private fun titleFromSlug(url: String): String {
+        return url.substringAfterLast("/")
+            .replace(Regex("""-\d+-bolum-.*$"""), "")
+            .replace("-", " ")
+            .split(" ")
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { word ->
+                word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            }
+    }
+
     private fun Element.toAnizmSearchResult(): SearchResponse? {
         val rawHref = attr("href").takeIf { it.isNotBlank() } ?: return null
         val url = fixUrlNull(rawHref) ?: return null
-
-        val finalUrl = when {
-            url.contains("-bolum-izle") -> url.replace(Regex("""-\d+-bolum-izle.*$"""), "")
-            url.contains("-bolum-final") -> url.replace(Regex("""-\d+-bolum-final.*$"""), "")
-            url.contains("/bolum/") -> return null
-            url.contains("/kategoriler/") -> return null
-            url.contains("/takvim") -> return null
-            url.contains("/fansublar") -> return null
-            url.contains("/raporver/") -> return null
-            url.endsWith(".css") || url.endsWith(".js") -> return null
-            else -> url
-        }
+        val finalUrl = cleanAnimeUrl(url) ?: return null
 
         val title = selectFirst("span, h3, div.animeName, div.title")?.text()?.trim()
-            ?.takeIf { it.isNotBlank() && it.length > 1 }
-            ?: attr("title").takeIf { it.isNotBlank() }
-            ?: text().trim().takeIf { it.isNotBlank() && it.length > 1 }
-            ?: return null
+            ?.takeIf { !isInvalidTitle(it) }
+            ?: attr("title").takeIf { !isInvalidTitle(it) }
+            ?: text().trim().takeIf { !isInvalidTitle(it) }
+            ?: titleFromSlug(finalUrl)
 
-        if (title.matches(Regex("""^\d+$"""))) return null
-        if (title.length < 2) return null
+        if (isInvalidTitle(title)) return null
 
         val poster = fixUrlNull(
             selectFirst("img")?.let {
