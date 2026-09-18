@@ -39,11 +39,12 @@ class CizgiMax : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val basePath = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val requestUrl = if (page > 1) {
-            val separator = if (request.data.contains("?")) "&" else "?"
-            "${request.data.removeSuffix("/")}${separator}page=$page"
+            val separator = if (basePath.contains("?")) "&" else "?"
+            "${basePath.removeSuffix("/")}${separator}page=$page"
         } else {
-            request.data
+            basePath
         }
 
         val document = app.get(requestUrl).document

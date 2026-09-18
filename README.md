@@ -4,11 +4,17 @@ Türkçe anime, dizi, film, belgesel ve çizgi dizi platformları için CloudStr
 
 ## 📦 Depoyu CloudStream'e Eklemek
 
-CloudStream → Depo Ekle → aşağıdaki URL'yi yapıştır:
+CloudStream uygulamasında **Ayarlar → Eklentiler → Depo Ekle** (veya `+ Depo Ekle`) bölümüne aşağıdaki bağlantıyı yapıştırın:
 
-```
+```text
 https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/repo.json
 ```
+
+> **Not (VPN / Bağlantı Uyarısı Alanlar İçin):**  
+> Türkiye'deki bazı servis sağlayıcılarında (Turkcell Superonline, TTNET vb.) `raw.githubusercontent.com` erişimi kısıtlanmış olabilir. Eğer *"Depo bulunamadı"* uyarısı alırsanız VPN açabilir veya **VPN gerektirmeyen CDN bağlantısını** kullanabilirsiniz:
+> ```text
+> https://fastly.jsdelivr.net/gh/ulgenzade/ulgencs3@builds/repo.json
+> ```
 
 ## 🎌 Anime Platformları (6 Eklenti)
 

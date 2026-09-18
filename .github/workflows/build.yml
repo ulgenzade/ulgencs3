@@ -59,6 +59,7 @@ jobs:
           chmod +x gradlew
           ./gradlew make || ./gradlew make --stacktrace
           find . -name "*.cs3" -exec cp {} $GITHUB_WORKSPACE/builds/ \;
+          cp repo.json $GITHUB_WORKSPACE/builds/ || true
           python3 make_plugins_json.py $GITHUB_WORKSPACE/builds ${{ github.repository }}
           ls -la $GITHUB_WORKSPACE/builds/
 

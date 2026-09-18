@@ -87,15 +87,15 @@ class DiziBox : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
-        val rawUrl = request.data
+        val rawPath = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val url = if (page == 1) {
-            if (rawUrl.contains("?")) {
-                rawUrl.substringBefore("/page/SAYFA/") + "/?" + rawUrl.substringAfter("?")
+            if (rawPath.contains("?")) {
+                rawPath.substringBefore("/page/SAYFA/") + "/?" + rawPath.substringAfter("?")
             } else {
-                rawUrl.substringBefore("/page/SAYFA/") + "/"
+                rawPath.substringBefore("/page/SAYFA/") + "/"
             }
         } else {
-            rawUrl.replace("SAYFA", "$page")
+            rawPath.replace("SAYFA", "$page")
         }
 
         val document = app.get(

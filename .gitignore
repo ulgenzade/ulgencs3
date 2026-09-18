@@ -15,12 +15,10 @@ captures/
 __pycache__/
 *.pyc
 *.pyo
-scripts/
 
 # Geliştirici notları ve araçları
 docs/
 PROJE_DURUMU_VE_YOL_HARITASI.md
-make_plugins_json.py
 repolar/
 repolar_extracted/
 

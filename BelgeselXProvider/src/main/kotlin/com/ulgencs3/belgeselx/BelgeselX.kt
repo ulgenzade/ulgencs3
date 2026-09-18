@@ -55,8 +55,9 @@ class BelgeselX : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         ensureInit()
+        val basePath = if (request.data.startsWith("http")) request.data else "$mainUrl/${request.data}"
         val url = if (page == 1) {
-            request.data
+            basePath
         } else {
             val categorySlug = request.data.removeSuffix("/").substringAfterLast("/")
             "https://belgeselx.com/ajax_konukat.php?url=$categorySlug&page=$page"

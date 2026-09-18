@@ -50,14 +50,18 @@ class TurkAnimeProvider : MainAPI() {
     // -------------------------------------------------------------------------
 
     override val mainPage = mainPageOf(
+        "/"                              to "Son Eklenenler",
         "/anime-turu/1/Aksiyon"          to "Aksiyon",
         "/anime-turu/2/Macera"           to "Macera",
         "/anime-turu/4/Komedi"           to "Komedi",
         "/anime-turu/8/Dram"             to "Dram",
         "/anime-turu/10/Fantastik"       to "Fantastik",
-        "/anime-turu/24/Bilim_Kurgu"     to "Bilim Kurgu",
+        "/anime-turu/14/Korku"           to "Korku",
         "/anime-turu/22/Romantizm"       to "Romantizm",
-        "/anime-turu/27/Shounen"         to "Shounen"
+        "/anime-turu/24/Bilim_Kurgu"     to "Bilim Kurgu",
+        "/anime-turu/27/Shounen"         to "Shounen",
+        "/anime-turu/42/Okul"            to "Okul",
+        "/anime-turu/43/Spor"            to "Spor"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
