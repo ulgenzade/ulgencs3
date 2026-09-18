@@ -25,7 +25,7 @@
     "name": "Anizium",
     "internalName": "AniziumProvider",
     "pluginClassName": "com.ulgencs3.anizium.AniziumPlugin",
-    "version": 2,
+    "version": 3,
     "apiVersion": 1,
     "authors": [
       "ulgenzade"
@@ -40,7 +40,7 @@
       "OVA"
     ],
     "language": "tr",
-    "fileSize": 36717,
+    "fileSize": 39003,
     "status": 1
   },
   {
