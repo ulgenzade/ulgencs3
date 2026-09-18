@@ -47,7 +47,7 @@
     "name": "Anizm",
     "internalName": "AnizmProvider",
     "pluginClassName": "com.ulgencs3.anizm.AnizmPlugin",
-    "version": 3,
+    "version": 4,
     "apiVersion": 1,
     "authors": [
       "ulgenzade"
@@ -62,7 +62,7 @@
       "OVA"
     ],
     "language": "tr",
-    "fileSize": 25447,
+    "fileSize": 29086,
     "status": 1
   },
   {
