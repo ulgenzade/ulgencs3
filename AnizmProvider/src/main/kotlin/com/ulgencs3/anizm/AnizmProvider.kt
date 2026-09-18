@@ -67,31 +67,27 @@ class AnizmProvider : MainAPI() {
     // action=tema     -> /temalar/ID
 
     override val mainPage = mainPageOf(
-        "home|home"            to "Son Eklenenler & Populer",
-        "filtre|izlenme"       to "En Cok Izlenenler",
-        "filtre|puan"          to "En Yuksek Puanlilar",
-        "durum|devam-ediyor"   to "Devam Eden Animeler",
-        "durum|tamamlandi"     to "Tamamlanan Animeler",
-        "tur|film"             to "Anime Filmleri",
+        "home|home"            to "Son Eklenen Bolumler",
         "tema|3"               to "Isekai",
         "kategori|34"          to "Shounen",
         "kategori|2"           to "Aksiyon",
         "kategori|1"           to "Macera",
         "kategori|13"          to "Fantastik",
-        "kategori|9"           to "Buyu",
         "kategori|3"           to "Komedi",
         "kategori|4"           to "Dram",
         "kategori|8"           to "Bilim Kurgu",
         "kategori|15"          to "Gizem",
         "kategori|10"          to "Dedektif",
         "kategori|11"          to "Dogaustu Gucler",
-        "kategori|12"          to "Dovus",
         "kategori|30"          to "Dovus Sanatlari",
         "kategori|20"          to "Korku",
         "kategori|14"          to "Gerilim",
         "kategori|7"           to "Askeri",
         "kategori|6"           to "Ecchi",
-        "kategori|21"          to "Mecha"
+        "kategori|21"          to "Mecha",
+        "tema|4"               to "Okul",
+        "tema|10"              to "Super Gucler",
+        "tema|1"               to "Romantizm"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -107,14 +103,21 @@ class AnizmProvider : MainAPI() {
                 val doc = app.get(mainUrl, headers = commonHeaders, interceptor = cfInterceptor).document
                 
                 // 1. Ana Sayfa Swiper Slide Kartları (.swiper-slide a.slideAnimeLink)
+                // Sitede ilk h6 = Anime Adı, ikinci h6 = Bölüm Numarası (örn. "12. Bölüm")
                 doc.select("div.swiper-slide, a.slideAnimeLink").forEach { el ->
                     val a = if (el.tagName() == "a") el else el.selectFirst("a.slideAnimeLink, a[href]") ?: return@forEach
                     val href = fixUrlNull(a.attr("href")) ?: return@forEach
                     val finalUrl = cleanAnimeUrl(href) ?: return@forEach
                     
-                    val title = a.selectFirst("h6:not(:has(img)):last-child, .animeTitle, h3, h2")?.text()?.trim()
-                        ?: a.select("h6").lastOrNull()?.text()?.trim()
-                        ?: titleFromSlug(finalUrl)
+                    val h6List = a.select("h6").map { it.text().trim() }.filter { it.isNotBlank() }
+                    val animeName = h6List.firstOrNull()?.takeIf { !isInvalidTitle(it) } ?: titleFromSlug(finalUrl)
+                    val epName = if (h6List.size > 1) h6List[1].takeIf { it.isNotBlank() } else null
+                    
+                    val title = if (epName != null && !animeName.contains(epName, ignoreCase = true)) {
+                        "$animeName - $epName"
+                    } else {
+                        animeName
+                    }
 
                     if (isInvalidTitle(title)) return@forEach
 
@@ -132,21 +135,6 @@ class AnizmProvider : MainAPI() {
                 if (items.isEmpty()) {
                     items.addAll(parseAnimeListPage(doc))
                 }
-            }
-            "filtre" -> {
-                val url = "$mainUrl/anime-listesi/?filtre=$param&sayfa=$page"
-                val doc = app.get(url, headers = commonHeaders, interceptor = cfInterceptor).document
-                items.addAll(parseAnimeListPage(doc))
-            }
-            "durum" -> {
-                val url = "$mainUrl/anime-listesi/?durum=$param&sayfa=$page"
-                val doc = app.get(url, headers = commonHeaders, interceptor = cfInterceptor).document
-                items.addAll(parseAnimeListPage(doc))
-            }
-            "tur" -> {
-                val url = "$mainUrl/anime-listesi/?tur=$param&sayfa=$page"
-                val doc = app.get(url, headers = commonHeaders, interceptor = cfInterceptor).document
-                items.addAll(parseAnimeListPage(doc))
             }
             "kategori" -> {
                 val url = "$mainUrl/kategoriler/$param?sayfa=$page"
@@ -373,34 +361,77 @@ class AnizmProvider : MainAPI() {
         val doc = app.get(data, headers = commonHeaders, interceptor = cfInterceptor).document
         val extractedUrls = mutableSetOf<String>()
 
-        // 1. Iframe'ler
-        doc.select("iframe[src], iframe[data-src]").forEach { iframe ->
+        // 1. Iframe'ler ve Video Container
+        doc.select("iframe[src], iframe[data-src], div#videoPlayer iframe, div.anizm_videoPlayer iframe").forEach { iframe ->
             val src = fixUrlNull(
                 iframe.attr("src").takeIf { it.isNotBlank() } ?: iframe.attr("data-src")
             ) ?: return@forEach
-            if (!src.contains("a-ads.com") && extractedUrls.add(src)) {
+            if (!src.contains("a-ads.com") && !src.contains("adservice") && extractedUrls.add(src)) {
                 loadExtractor(src, mainUrl, subtitleCallback, callback)
             }
         }
 
-        // 2. videoPlayerButtons AJAX
-        doc.select("a.videoPlayerButtons[data-id], button.videoPlayerButtons[data-id]").forEach { el ->
+        // 2. videoPlayerButtons AJAX (Sunucu Butonları: Sistenn, Vidmoly, Abyss, Voe vb.)
+        doc.select("a.videoPlayerButtons, button.videoPlayerButtons, a.anizm_button[data-id], [data-id]").forEach { el ->
             val videoId = el.attr("data-id").takeIf { it.isNotBlank() } ?: return@forEach
-            val playerType = el.attr("data-type").takeIf { it.isNotBlank() } ?: return@forEach
+            val serverName = el.text().trim().takeIf { it.isNotBlank() } ?: "Player"
+            
             runCatching {
                 val resp = app.post(
                     "$mainUrl/ajax/player",
                     headers = commonHeaders + mapOf(
                         "X-Requested-With" to "XMLHttpRequest",
-                        "Content-Type" to "application/x-www-form-urlencoded"
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Referer" to data
                     ),
-                    data = mapOf("id" to videoId, "type" to playerType),
+                    data = mapOf("id" to videoId, "action" to "player", "type" to "player"),
                     interceptor = cfInterceptor
                 ).text
+
+                // İframe kaynaklarını çek
                 Regex("""(?:src|href)=["'](https?://[^"']+)["']""").findAll(resp).forEach { m ->
                     val embedUrl = m.groupValues[1]
-                    if (!embedUrl.contains("adservice") && extractedUrls.add(embedUrl)) {
-                        loadExtractor(embedUrl, mainUrl, subtitleCallback, callback)
+                    if (!embedUrl.contains("adservice") && !embedUrl.contains("googleads") && extractedUrls.add(embedUrl)) {
+                        // Eğer anizm embed sayfasıysa içindeki stream/iframe'i al
+                        if (embedUrl.contains("anizm.net/embed") || embedUrl.contains("/embed/")) {
+                            runCatching {
+                                val innerDoc = app.get(embedUrl, headers = commonHeaders + mapOf("Referer" to data), interceptor = cfInterceptor).document
+                                innerDoc.select("iframe[src]").forEach { innerIframe ->
+                                    val innerSrc = fixUrlNull(innerIframe.attr("src")) ?: return@forEach
+                                    if (extractedUrls.add(innerSrc)) {
+                                        loadExtractor(innerSrc, embedUrl, subtitleCallback, callback)
+                                    }
+                                }
+                                innerDoc.select("source[src]").forEach { s ->
+                                    val src = fixUrlNull(s.attr("src")) ?: return@forEach
+                                    if (extractedUrls.add(src)) {
+                                        val isHls = s.attr("type").contains("mpegurl") || src.contains("m3u8")
+                                        callback(newExtractorLink(
+                                            source = name,
+                                            name = "$name [$serverName]",
+                                            url = src,
+                                            type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                                        ))
+                                    }
+                                }
+                            }
+                        } else {
+                            loadExtractor(embedUrl, mainUrl, subtitleCallback, callback)
+                        }
+                    }
+                }
+
+                // Direkt video URL'si varsa (m3u8, mp4)
+                Regex("""(?:file|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']""").findAll(resp).forEach { m ->
+                    val vUrl = m.groupValues[1]
+                    if (extractedUrls.add(vUrl)) {
+                        val isHls = vUrl.contains("m3u8")
+                        callback(newExtractorLink(
+                            source = name,
+                            name = "$name [$serverName]",
+                            url = vUrl,
+                            type = if (isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                        ))
                     }
                 }
             }
