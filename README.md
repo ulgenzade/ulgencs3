@@ -33,6 +33,7 @@ Eğer tam URL yapıştırmak isterseniz:
   https://raw.githubusercontent.com/ulgenzade/ulgencs3/builds/repo.json
   ```
 
+Anizm şuan sorunlu. Yavaş yavaş toparlıyorum.
 
 ## 🎌 Anime Platformları (6 Eklenti)
 
